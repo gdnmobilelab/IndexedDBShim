@@ -14,15 +14,11 @@
     "clean": "grunt clean",
     "w3c-build": "grunt clean-w3c && node test-support/node-buildjs",
     "test": "npm run sauce-qunit",
-
     "mocha": "grunt clean-mocha && grunt mocha && grunt clean-mocha",
-
     "sauce-qunit": "grunt sauce-qunit",
     "phantom-qunit": "grunt phantom-qunit",
     "node-qunit": "grunt clean-qunit && grunt nodequnit && grunt clean-qunit",
-
     "fake": "grunt clean-fake && mocha tests-polyfill/fakeIndexedDB/fakeIndexedDB.js && grunt clean-fake",
-
     "good": "npm run mock-good && npm run w3c-good && npm run w3c-old-good",
     "mock": "grunt clean-mock && mocha tests-polyfill/indexedDBmock/*.js && grunt clean-mock",
     "mock-good": "grunt clean-mock && mocha tests-polyfill/indexedDBmock/i*.js && mocha tests-polyfill/indexedDBmock/k*.js && mocha tests-polyfill/indexedDBmock/o*.js && mocha tests-polyfill/indexedDBmock/t*.js && grunt clean-mock",
@@ -31,7 +27,8 @@
     "tests-polyfill": "grunt clean-polyfill && npm run fake && npm run mock && npm run w3c-old && browserify-test -t [ babelify --presets es2015 ] tests-polyfill/**/*.js",
     "w3c": "npm run w3c-build && node test-support/node-indexeddbshim-test",
     "w3c-good": "npm run w3c -- good",
-    "w3c-bad": "npm run w3c -- bad"
+    "w3c-bad": "npm run w3c -- bad",
+    "node6-build": "babel src --out-dir node6 --presets=node6 --plugins=add-module-exports"
   },
   "repository": {
     "type": "git",
@@ -40,7 +37,7 @@
   "bugs": {
     "url": "https://github.com/axemclion/IndexedDBShim/issues"
   },
-  "main": "dist/indexeddbshim-node.js",
+  "main": "node6/node.js",
   "browser": "dist/indexeddbshim.min.js",
   "keywords": [
     "indexedDB",
@@ -49,21 +46,23 @@
     "websql"
   ],
   "dependencies": {
-      "websql": "0.4.4"
+    "websql": "0.4.4"
   },
   "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-preset-node6": "^11.0.0",
     "atob": "2.0.3",
-    "babel-plugin-add-module-exports": "0.2.1",
+    "babel-plugin-add-module-exports": "^0.2.1",
     "babel-polyfill": "6.16.0",
     "babel-preset-es2015": "6.18.0",
     "babelify": "7.3.0",
     "chai": "3.5.0",
     "cheerio": "0.22.0",
     "colors": "1.1.2",
+    "eslint": "3.9.0",
     "eslint-config-standard": "6.2.1",
     "eslint-plugin-promise": "3.3.0",
     "eslint-plugin-standard": "2.0.1",
-    "eslint": "3.9.0",
     "eventtarget": "https://github.com/brettz9/eventdispatcher.js#early-late-listeners-noproxy",
     "grunt": "1.0.1",
     "grunt-browserify": "5.0.0",
