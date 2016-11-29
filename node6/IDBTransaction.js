@@ -398,8 +398,8 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
         abort(null, { code: 0 });
         // me.__tx.executeSql('ROLLBACK', [], abort, abort); // Not working in some circumstances, even in node
     } else {
-            abort(null, { code: 0 });
-        }
+        abort(null, { code: 0 });
+    }
 };
 
 IDBTransaction.prototype.abort = function () {

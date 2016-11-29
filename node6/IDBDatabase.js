@@ -149,8 +149,8 @@ IDBDatabase.prototype.transaction = function (storeNames, mode) {
         mode = mode === 1 ? 'readwrite' : 'readonly';
         _CFG2.default.DEBUG && console.log('Mode should be a string, but was specified as ', mode); // Todo: Remove this option as no longer in spec
     } else {
-            mode = mode || 'readonly';
-        }
+        mode = mode || 'readonly';
+    }
 
     if (mode !== 'readonly' && mode !== 'readwrite') {
         throw new TypeError('Invalid transaction mode: ' + mode);

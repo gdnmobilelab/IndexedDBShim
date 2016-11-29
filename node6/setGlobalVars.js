@@ -4,10 +4,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; }; // Object.assign in EventTarget, etc.
-
-
-require('babel-polyfill');
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _Event = require('./Event.js');
 
@@ -136,8 +133,8 @@ function setGlobalVars(idb) {
     // and detect version 9: http://stackoverflow.com/a/26363560/271577
     /(iPad|iPhone|iPod).* os 9_/i.test(navigator.userAgent) && !window.MSStream // But avoid IE11
     )) {
-            poorIndexedDbSupport = true;
-        }
+        poorIndexedDbSupport = true;
+    }
     _CFG2.default.DEFAULT_DB_SIZE = ( // Safari currently requires larger size: (We don't need a larger size for Node as node-websql doesn't use this info)
     // https://github.com/axemclion/IndexedDBShim/issues/41
     // https://github.com/axemclion/IndexedDBShim/issues/115

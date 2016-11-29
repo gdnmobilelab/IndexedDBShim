@@ -5,7 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = exports.decode = exports.encode = exports.retrocycle = exports.decycle = undefined;
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; }; /* eslint-disable no-eval */
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; /* eslint-disable no-eval */
 // Needed by Node; uses native if available (browser)
 
 
@@ -196,10 +196,10 @@ function decycle(object, callback) {
                 '$enc': value + '' // handles NaN, Infinity, Negative Infinity
             };
         } else if (value === undefined) {
-                value = {
-                    '$type': 'undefined'
-                };
-            }
+            value = {
+                '$type': 'undefined'
+            };
+        }
         return value;
     }
     derezObj = derez(object, '$');

@@ -5,7 +5,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = exports.findMultiEntryMatches = exports.isKeyInRange = exports.isMultiEntryMatch = exports.setValue = exports.evaluateKeyPathOnValue = exports.extractKeyFromValueUsingKeyPath = exports.convertValueToKeyMultiEntry = exports.convertValueToKey = exports.decode = exports.encode = undefined;
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _DOMException = require('./DOMException.js');
 
@@ -83,28 +83,28 @@ var types = {
                         mantissa = flipBase32(padBase32Mantissa(key32));
                         // Non-negative exponent case:
                     } else {
-                            sign = signValues.indexOf('bigNegative');
-                            exponent = flipBase32(padBase32Exponent(decimalIndex !== -1 ? decimalIndex : key32.length));
-                            mantissa = flipBase32(padBase32Mantissa(key32));
-                        }
+                        sign = signValues.indexOf('bigNegative');
+                        exponent = flipBase32(padBase32Exponent(decimalIndex !== -1 ? decimalIndex : key32.length));
+                        mantissa = flipBase32(padBase32Mantissa(key32));
+                    }
                     // Non-negative cases:
                 } else {
-                        // Negative exponent case:
-                        if (key < 1) {
-                            sign = signValues.indexOf('smallPositive');
-                            exponent = flipBase32(padBase32Exponent(significantDigitIndex));
-                            mantissa = padBase32Mantissa(key32);
-                            // Non-negative exponent case:
-                        } else {
-                                sign = signValues.indexOf('bigPositive');
-                                exponent = padBase32Exponent(decimalIndex !== -1 ? decimalIndex : key32.length);
-                                mantissa = padBase32Mantissa(key32);
-                            }
+                    // Negative exponent case:
+                    if (key < 1) {
+                        sign = signValues.indexOf('smallPositive');
+                        exponent = flipBase32(padBase32Exponent(significantDigitIndex));
+                        mantissa = padBase32Mantissa(key32);
+                        // Non-negative exponent case:
+                    } else {
+                        sign = signValues.indexOf('bigPositive');
+                        exponent = padBase32Exponent(decimalIndex !== -1 ? decimalIndex : key32.length);
+                        mantissa = padBase32Mantissa(key32);
                     }
+                }
                 // Infinite cases:
             } else {
-                    sign = signValues.indexOf(key > 0 ? 'positiveInfinity' : 'negativeInfinity');
-                }
+                sign = signValues.indexOf(key > 0 ? 'positiveInfinity' : 'negativeInfinity');
+            }
 
             return collations.indexOf('number') + '-' + sign + exponent + mantissa;
         },

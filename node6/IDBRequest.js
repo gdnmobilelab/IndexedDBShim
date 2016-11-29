@@ -31,7 +31,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
  * The IDBRequest Object that is returns for all async calls
  * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#request-api
  */
-
 var IDBRequest = function () {
     function IDBRequest() {
         _classCallCheck(this, IDBRequest);

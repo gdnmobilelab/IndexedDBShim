@@ -4,7 +4,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _DOMException = require('./DOMException.js');
 
@@ -248,14 +248,14 @@ IDBObjectStore.prototype.__deriveKey = function (tx, value, key, success, failur
         // If auto-increment and the keyPath item is a valid numeric key, get the old auto-increment to compare if the new is higher
         //  to determine which to use and whether to update the current number
     } else if (me.autoIncrement && Number.isFinite(keyToCheck) && keyToCheck >= 1) {
-            getCurrentNumber(function (cn) {
-                var useNewForAutoInc = keyToCheck >= cn;
-                success(keyToCheck, useNewForAutoInc);
-            });
-            // Not auto-increment or auto-increment with a bad (non-numeric or < 1) keyPath key
-        } else {
-                success(keyToCheck);
-            }
+        getCurrentNumber(function (cn) {
+            var useNewForAutoInc = keyToCheck >= cn;
+            success(keyToCheck, useNewForAutoInc);
+        });
+        // Not auto-increment or auto-increment with a bad (non-numeric or < 1) keyPath key
+    } else {
+        success(keyToCheck);
+    }
 };
 
 IDBObjectStore.prototype.__insertData = function (tx, encoded, value, primaryKey, passedKey, useNewForAutoInc, success, error) {
@@ -366,22 +366,22 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, primaryKey
                 //    if a manually passed in key is invalid (non-numeric or < 1),
                 //    then we don't need to modify the current number
             } else if (useNewForAutoInc === false || !Number.isFinite(primaryKey) || primaryKey < 1) {
-                    insert(primaryKey);
-                    // Increment current number by 1 (we cannot leverage SQLite's
-                    //  autoincrement (and decrement when not needed), as decrementing
-                    //  will be overwritten/ignored upon the next insert)
-                } else {
-                        insert(function () {
-                            var sql = 'UPDATE __sys__ SET currNum = currNum + 1 WHERE name = ?';
-                            var sqlValues = [me.name];
-                            _CFG2.default.DEBUG && console.log(sql, sqlValues);
-                            tx.executeSql(sql, sqlValues, function (tx, data) {
-                                success(primaryKey);
-                            }, function (tx, err) {
-                                error((0, _DOMException.createDOMException)('UnknownError', 'Could not set the auto increment value for key', err));
-                            });
-                        });
-                    }
+                insert(primaryKey);
+                // Increment current number by 1 (we cannot leverage SQLite's
+                //  autoincrement (and decrement when not needed), as decrementing
+                //  will be overwritten/ignored upon the next insert)
+            } else {
+                insert(function () {
+                    var sql = 'UPDATE __sys__ SET currNum = currNum + 1 WHERE name = ?';
+                    var sqlValues = [me.name];
+                    _CFG2.default.DEBUG && console.log(sql, sqlValues);
+                    tx.executeSql(sql, sqlValues, function (tx, data) {
+                        success(primaryKey);
+                    }, function (tx, err) {
+                        error((0, _DOMException.createDOMException)('UnknownError', 'Could not set the auto increment value for key', err));
+                    });
+                });
+            }
         });
     }).catch(function (err) {
         error(err);
@@ -410,7 +410,7 @@ IDBObjectStore.prototype.add = function (value, key) {
                         me.__cursors.forEach(function (cursor) {
                             cursor.__addToCache();
                         });
-                        /* Key.encode(primaryKey), encoded */success.apply(undefined, arguments);
+                        success.apply(undefined, arguments);
                     }, error);
                 });
             }, error);
@@ -447,7 +447,7 @@ IDBObjectStore.prototype.put = function (value, key) {
                             me.__cursors.forEach(function (cursor) {
                                 cursor.__addToCache();
                             });
-                            /* encodedPrimaryKey, encoded, !!data.rowsAffected */success.apply(undefined, arguments);
+                            success.apply(undefined, arguments);
                         }, error);
                     }, function (tx, err) {
                         error(err);
@@ -564,7 +564,7 @@ IDBObjectStore.prototype['delete'] = function (range) {
             me.__cursors.forEach(function (cursor) {
                 cursor.__deleteFromCache();
             });
-            /* sqlArr, sqlValues */success();
+            success();
         }, function (tx, err) {
             error(err);
         });

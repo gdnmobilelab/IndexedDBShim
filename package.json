@@ -46,7 +46,6 @@
     "websql"
   ],
   "dependencies": {
-    "websql": "0.4.4"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0",
