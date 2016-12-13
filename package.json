@@ -1,11 +1,11 @@
 {
   "name": "indexeddbshim-node6",
-  "version": "2.2.1",
-  "author": "Parashuram <code@nparashuram.com>",
+  "version": "2.2.2",
+  "author": "Alastair Coote <alastair.coote@guardian.co.uk>",
   "contributors": [
     "Brett Zamir"
   ],
-  "homepage": "https://github.com/axemclion/IndexedDBShim",
+  "homepage": "https://github.com/gdnmobilelab/IndexedDBShim-node6",
   "description": "A polyfill for IndexedDB using WebSql",
   "scripts": {
     "start": "grunt",
@@ -33,10 +33,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/axemclion/IndexedDBShim.git"
+    "url": "git://github.com/gdnmobilelab/IndexedDBShim-node6"
   },
   "bugs": {
-    "url": "https://github.com/axemclion/IndexedDBShim/issues"
+    "url": "https://github.com/gdnmobilelab/IndexedDBShim-node6/issues"
   },
   "main": "node6/node.js",
   "browser": "dist/indexeddbshim.min.js",
@@ -47,7 +47,6 @@
     "websql"
   ],
   "dependencies": {
-    "babel-cli": "^6.18.0"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0",
