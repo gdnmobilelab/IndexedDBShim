@@ -29,7 +29,7 @@ _CFG2.default.win = { openDatabase: _websql2.default };
 // END: Same code as in node.js
 
 // BEGIN: Same code as in node.js
-var __setGlobalVars = function __setGlobalVars() {
+const __setGlobalVars = function () {
     (0, _setGlobalVars2.default)();
     shimIndexedDB.__setUnicodeIdentifiers(UnicodeIdentifiers);
 };

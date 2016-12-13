@@ -8,9 +8,16 @@ on `node-websql` - not because it doesn't need it, but so that you can provide a
 So now you create it like so:
 
     const openDatabase = require('websql');
-    const idbShim = require('indexeddbshim')(openDatabase);
-
+    const idbShim = require('indexeddbshim-node6')(openDatabase);
 
 It also removes the dependency on `babel-polyfill`, as I don't *think* it needs it.
+
+## Rollup
+
+There's also a [Rollup](http://rollup.js.org) compatible version of the library that preserves the ES6
+module declarations. Use it like so:
+
+    import idbShim from 'indexeddbshim/rollup-ready/node.js';
+ 
 
 Safe to assume that this will work with node versions >=6, but probably not < 6.

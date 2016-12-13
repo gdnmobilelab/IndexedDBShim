@@ -1,10 +1,5 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-const map = {};
-const CFG = {};
+var map = {};
+var CFG = {};
 
 // Commenting out the below as, for some reason, JavaScriptCore doesn't like it.
 // setting the keys manually works fine, however.
@@ -31,5 +26,4 @@ const CFG = {};
 //     });
 // });
 
-exports.default = CFG;
-module.exports = exports["default"];
+export default CFG;

@@ -23,7 +23,7 @@ _CFG2.default.win = typeof window !== 'undefined' ? window : self; // For Web Wo
 (0, _setGlobalVars2.default)();
 // END: Same code as in browser.js
 
-var __setUnicodeIdentifiers = shimIndexedDB.__setUnicodeIdentifiers.bind(shimIndexedDB);
+const __setUnicodeIdentifiers = shimIndexedDB.__setUnicodeIdentifiers.bind(shimIndexedDB);
 shimIndexedDB.__setUnicodeIdentifiers = function () {
     __setUnicodeIdentifiers(UnicodeIdentifiers);
 };

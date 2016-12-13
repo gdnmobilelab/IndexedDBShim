@@ -1,36 +1,12 @@
-'use strict';
+import { createEvent } from './Event.js';
+import { logError, findError, createDOMException } from './DOMException.js';
+import { IDBRequest } from './IDBRequest.js';
+import * as util from './util.js';
+import IDBObjectStore from './IDBObjectStore.js';
+import CFG from './CFG.js';
+import EventTarget from 'eventtarget';
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _Event = require('./Event.js');
-
-var _DOMException = require('./DOMException.js');
-
-var _IDBRequest = require('./IDBRequest.js');
-
-var _util = require('./util.js');
-
-var util = _interopRequireWildcard(_util);
-
-var _IDBObjectStore = require('./IDBObjectStore.js');
-
-var _IDBObjectStore2 = _interopRequireDefault(_IDBObjectStore);
-
-var _CFG = require('./CFG.js');
-
-var _CFG2 = _interopRequireDefault(_CFG);
-
-var _eventtarget = require('eventtarget');
-
-var _eventtarget2 = _interopRequireDefault(_eventtarget);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-let uniqueID = 0;
+var uniqueID = 0;
 
 /**
  * The IndexedDB Transaction
@@ -41,6 +17,8 @@ let uniqueID = 0;
  * @constructor
  */
 function IDBTransaction(db, storeNames, mode) {
+    var _this = this;
+
     this.__id = ++uniqueID; // for debugging simultaneous transactions
     this.__active = true;
     this.__running = false;
@@ -56,24 +34,24 @@ function IDBTransaction(db, storeNames, mode) {
     this.__setOptions({ defaultSync: true });
 
     // Kick off the transaction as soon as all synchronous code is done.
-    setTimeout(() => {
-        this.__executeRequests();
+    setTimeout(function () {
+        _this.__executeRequests();
     }, 0);
 }
 
 IDBTransaction.prototype.__executeRequests = function () {
     if (this.__running) {
-        _CFG2.default.DEBUG && console.log('Looks like the request set is already running', this.mode);
+        CFG.DEBUG && console.log('Looks like the request set is already running', this.mode);
         return;
     }
 
     this.__running = true;
-    const me = this;
+    var me = this;
 
     me.db.__db[me.mode === 'readonly' ? 'readTransaction' : 'transaction']( // `readTransaction` is optimized, at least in `node-websql`
     function executeRequests(tx) {
         me.__tx = tx;
-        let q = null,
+        var q = null,
             i = -1;
 
         function success(result, req) {
@@ -87,7 +65,7 @@ IDBTransaction.prototype.__executeRequests = function () {
             q.req.__readyState = 'done';
             q.req.__result = result;
             q.req.__error = null;
-            const e = (0, _Event.createEvent)('success');
+            var e = createEvent('success');
             try {
                 // Catching a `dispatchEvent` call is normally not possible for a standard `EventTarget`,
                 // but we are using the `EventTarget` library's `__userErrorEventHandler` to override this
@@ -97,13 +75,13 @@ IDBTransaction.prototype.__executeRequests = function () {
                 q.req.dispatchEvent(e);
                 // Do not set __active flag to false yet: https://github.com/w3c/IndexedDB/issues/87
             } catch (err) {
-                me.__abortTransaction((0, _DOMException.createDOMException)('AbortError', 'A request was aborted.'));
+                me.__abortTransaction(createDOMException('AbortError', 'A request was aborted.'));
                 return;
             }
             executeNextRequest();
         }
 
-        function error(...args /* tx, err */) {
+        function error() /* tx, err */{
             if (me.__errored || me.__transactionFinished) {
                 // We've already called "onerror", "onabort", or thrown within the transaction, so don't do it again.
                 return;
@@ -112,7 +90,12 @@ IDBTransaction.prototype.__executeRequests = function () {
                 // Avoid continuing with aborted requests
                 return;
             }
-            const err = (0, _DOMException.findError)(args);
+
+            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                args[_key] = arguments[_key];
+            }
+
+            var err = findError(args);
             if (!q.req) {
                 me.__abortTransaction(q.req.__error);
                 return;
@@ -129,20 +112,20 @@ IDBTransaction.prototype.__executeRequests = function () {
             q.req.addDefaultEventListener('error', function () {
                 me.__abortTransaction(q.req.__error);
             });
-            let e;
+            var e = void 0;
             try {
                 // Catching a `dispatchEvent` call is normally not possible for a standard `EventTarget`,
                 // but we are using the `EventTarget` library's `__userErrorEventHandler` to override this
                 // behavior for convenience in our internal calls
                 me.__internal = true;
                 me.__active = true;
-                e = (0, _Event.createEvent)('error', err, { bubbles: true, cancelable: true });
+                e = createEvent('error', err, { bubbles: true, cancelable: true });
                 q.req.dispatchEvent(e);
                 // Do not set __active flag to false yet: https://github.com/w3c/IndexedDB/issues/87
             } catch (handlerErr) {
-                (0, _DOMException.logError)('Error', 'An error occurred in a handler attached to request chain', handlerErr); // We do nothing else with this `handlerErr` per spec
+                logError('Error', 'An error occurred in a handler attached to request chain', handlerErr); // We do nothing else with this `handlerErr` per spec
                 e.preventDefault(); // Prevent 'error' default as steps indicate we should abort with `AbortError` even without cancellation
-                me.__abortTransaction((0, _DOMException.createDOMException)('AbortError', 'A request was aborted.'));
+                me.__abortTransaction(createDOMException('AbortError', 'A request was aborted.'));
             }
         }
 
@@ -174,7 +157,8 @@ IDBTransaction.prototype.__executeRequests = function () {
 
         executeNextRequest();
     }, function webSqlError(errWebsql) {
-        let name, message;
+        var name = void 0,
+            message = void 0;
         switch (errWebsql.code) {
             case 4:
                 {
@@ -200,23 +184,23 @@ IDBTransaction.prototype.__executeRequests = function () {
                 }
         }
         message += ' (' + errWebsql.message + ')--(' + errWebsql.code + ')';
-        const err = (0, _DOMException.createDOMException)(name, message);
+        var err = createDOMException(name, message);
         me.__abortTransaction(err);
     });
 
     function transactionFinished() {
         me.__active = false;
-        _CFG2.default.DEBUG && console.log('Transaction completed');
-        const evt = (0, _Event.createEvent)('complete');
+        CFG.DEBUG && console.log('Transaction completed');
+        var evt = createEvent('complete');
         me.__transactionFinished = true;
         try {
             // Catching a `dispatchEvent` call is normally not possible for a standard `EventTarget`,
             // but we are using the `EventTarget` library's `__userErrorEventHandler` to override this
             // behavior for convenience in our internal calls
-            me.dispatchEvent((0, _Event.createEvent)('__beforecomplete'));
+            me.dispatchEvent(createEvent('__beforecomplete'));
             me.__internal = true;
             me.dispatchEvent(evt);
-            me.dispatchEvent((0, _Event.createEvent)('__complete'));
+            me.dispatchEvent(createEvent('__complete'));
         } catch (e) {
             // An error occurred in the "oncomplete" handler.
             // It's too late to call "onerror" or "onabort". Throw a global error instead.
@@ -236,7 +220,7 @@ IDBTransaction.prototype.__executeRequests = function () {
  * @protected
  */
 IDBTransaction.prototype.__createRequest = function (source) {
-    const request = new _IDBRequest.IDBRequest();
+    var request = new IDBRequest();
     request.__source = source !== undefined ? source : this.db;
     request.__transaction = this;
     return request;
@@ -250,7 +234,7 @@ IDBTransaction.prototype.__createRequest = function (source) {
  * @protected
  */
 IDBTransaction.prototype.__addToTransactionQueue = function (callback, args, source) {
-    const request = this.__createRequest(source);
+    var request = this.__createRequest(source);
     this.__pushToQueue(request, callback, args);
     return request;
 };
@@ -284,13 +268,13 @@ IDBTransaction.prototype.__pushToQueue = function (request, callback, args) {
 
 IDBTransaction.prototype.__assertActive = function () {
     if (!this.__active) {
-        throw (0, _DOMException.createDOMException)('TransactionInactiveError', 'A request was placed against a transaction which is currently not active, or which is finished');
+        throw createDOMException('TransactionInactiveError', 'A request was placed against a transaction which is currently not active, or which is finished');
     }
 };
 
 IDBTransaction.prototype.__assertWritable = function () {
     if (this.mode === 'readonly') {
-        throw (0, _DOMException.createDOMException)('ReadOnlyError', 'The transaction is read only');
+        throw createDOMException('ReadOnlyError', 'The transaction is read only');
     }
 };
 
@@ -308,32 +292,32 @@ IDBTransaction.prototype.objectStore = function (objectStoreName) {
         throw new TypeError('No object store name was specified');
     }
     if (!this.__active) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'A request was placed against a transaction which is currently not active, or which is finished');
+        throw createDOMException('InvalidStateError', 'A request was placed against a transaction which is currently not active, or which is finished');
     }
     if (this.__objectStoreNames.indexOf(objectStoreName) === -1) {
-        throw (0, _DOMException.createDOMException)('NotFoundError', objectStoreName + ' is not participating in this transaction');
+        throw createDOMException('NotFoundError', objectStoreName + ' is not participating in this transaction');
     }
-    const store = this.db.__objectStores[objectStoreName];
+    var store = this.db.__objectStores[objectStoreName];
     if (!store) {
-        throw (0, _DOMException.createDOMException)('NotFoundError', objectStoreName + ' does not exist in ' + this.db.name);
+        throw createDOMException('NotFoundError', objectStoreName + ' does not exist in ' + this.db.name);
     }
 
     if (!this.__storeClones[objectStoreName]) {
-        this.__storeClones[objectStoreName] = _IDBObjectStore2.default.__clone(store, this);
+        this.__storeClones[objectStoreName] = IDBObjectStore.__clone(store, this);
     }
     return this.__storeClones[objectStoreName];
 };
 
 IDBTransaction.prototype.__abortTransaction = function (err) {
-    const me = this;
+    var me = this;
     me.__active = false; // Setting here and in transactionFinished for https://github.com/w3c/IndexedDB/issues/87
     function abort(tx, errOrResult) {
         if (!tx) {
-            _CFG2.default.DEBUG && console.log('Rollback not possible due to missing transaction', me);
+            CFG.DEBUG && console.log('Rollback not possible due to missing transaction', me);
         } else if (typeof errOrResult.code === 'number') {
-            _CFG2.default.DEBUG && console.log('Rollback erred; feature is probably not supported as per WebSQL', me);
+            CFG.DEBUG && console.log('Rollback erred; feature is probably not supported as per WebSQL', me);
         } else {
-            _CFG2.default.DEBUG && console.log('Rollback succeeded', me);
+            CFG.DEBUG && console.log('Rollback succeeded', me);
         }
 
         // Todo: Steps for aborting an upgrade transaction
@@ -342,7 +326,7 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
             me.__error = err;
         }
 
-        (0, _DOMException.logError)('Error', 'An error occurred in a transaction', err);
+        logError('Error', 'An error occurred in a transaction', err);
         if (me.__errored) {
             // We've already called "onerror", "onabort", or thrown, so don't do it again.
             return;
@@ -351,7 +335,7 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
         if (me.__transactionFinished) {
             // The transaction has already completed, so we can't call "onerror" or "onabort".
             // So throw the error instead.
-            setTimeout(() => {
+            setTimeout(function () {
                 throw err;
             }, 0);
         }
@@ -363,12 +347,12 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
             //  and I'm unsure whether `setTimeout` currently behaves first-in-first-out with the same timeout
             //  so we could just use a `forEach`.
             return promises.then(function () {
-                const reqEvt = (0, _Event.createEvent)('error', null, { bubbles: true, cancelable: true });
+                var reqEvt = createEvent('error', null, { bubbles: true, cancelable: true });
                 q.req.__readyState = 'done';
                 q.req.__result = undefined;
-                q.req.__error = (0, _DOMException.createDOMException)('AbortError', 'A request was aborted.');
+                q.req.__error = createDOMException('AbortError', 'A request was aborted.');
                 return new Promise(function (resolve) {
-                    setTimeout(() => {
+                    setTimeout(function () {
                         q.req.dispatchEvent(reqEvt); // No need to catch errors
                         resolve();
                     }, 0);
@@ -376,10 +360,10 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
             });
         }, Promise.resolve()).then(function () {
             // Also works when there are no pending requests
-            const evt = (0, _Event.createEvent)('abort', err, { bubbles: true, cancelable: false });
+            var evt = createEvent('abort', err, { bubbles: true, cancelable: false });
             me.dispatchEvent(evt);
             me.__storeClones = {};
-            me.dispatchEvent((0, _Event.createEvent)('__abort'));
+            me.dispatchEvent(createEvent('__abort'));
         });
     }
 
@@ -395,10 +379,10 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
 };
 
 IDBTransaction.prototype.abort = function () {
-    const me = this;
-    _CFG2.default.DEBUG && console.log('The transaction was aborted', me);
+    var me = this;
+    CFG.DEBUG && console.log('The transaction was aborted', me);
     if (!this.__active) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'A request was placed against a transaction which is currently not active, or which is finished');
+        throw createDOMException('InvalidStateError', 'A request was placed against a transaction which is currently not active, or which is finished');
     }
     me.__abortTransaction(null);
 };
@@ -408,18 +392,18 @@ IDBTransaction.prototype.toString = function () {
 
 IDBTransaction.__assertVersionChange = function (tx) {
     if (!tx || tx.mode !== 'versionchange') {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'Not a version transaction');
+        throw createDOMException('InvalidStateError', 'Not a version transaction');
     }
 };
 IDBTransaction.__assertNotVersionChange = function (tx) {
     if (tx && tx.mode === 'versionchange') {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'Cannot be called during a version transaction');
+        throw createDOMException('InvalidStateError', 'Cannot be called during a version transaction');
     }
 };
 
 IDBTransaction.__assertActive = function (tx) {
     if (!tx || !tx.__active) {
-        throw (0, _DOMException.createDOMException)('TransactionInactiveError', 'A request was placed against a transaction which is currently not active, or which is finished');
+        throw createDOMException('TransactionInactiveError', 'A request was placed against a transaction which is currently not active, or which is finished');
     }
 };
 
@@ -442,7 +426,6 @@ IDBTransaction.prototype.__userErrorEventHandler = function (error, triggerGloba
 
 util.defineReadonlyProperties(IDBTransaction.prototype, ['objectStoreNames', 'mode', 'db', 'error']);
 
-Object.assign(IDBTransaction.prototype, _eventtarget2.default.prototype);
+Object.assign(IDBTransaction.prototype, EventTarget.prototype);
 
-exports.default = IDBTransaction;
-module.exports = exports['default'];
+export default IDBTransaction;

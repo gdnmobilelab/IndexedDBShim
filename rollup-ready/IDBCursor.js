@@ -1,45 +1,23 @@
-'use strict';
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.IDBCursorWithValue = exports.IDBCursor = undefined;
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-var _IDBRequest = require('./IDBRequest.js');
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var _DOMException = require('./DOMException.js');
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
-var _IDBKeyRange = require('./IDBKeyRange.js');
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var _IDBFactory = require('./IDBFactory.js');
-
-var _util = require('./util.js');
-
-var util = _interopRequireWildcard(_util);
-
-var _IDBTransaction = require('./IDBTransaction.js');
-
-var _IDBTransaction2 = _interopRequireDefault(_IDBTransaction);
-
-var _Key = require('./Key.js');
-
-var _Key2 = _interopRequireDefault(_Key);
-
-var _Sca = require('./Sca.js');
-
-var _Sca2 = _interopRequireDefault(_Sca);
-
-var _IDBIndex = require('./IDBIndex.js');
-
-var _IDBIndex2 = _interopRequireDefault(_IDBIndex);
-
-var _CFG = require('./CFG.js');
-
-var _CFG2 = _interopRequireDefault(_CFG);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+import { IDBRequest } from './IDBRequest.js';
+import { createDOMException } from './DOMException.js';
+import { setSQLForRange, IDBKeyRange } from './IDBKeyRange.js';
+import { cmp } from './IDBFactory.js';
+import * as util from './util.js';
+import IDBTransaction from './IDBTransaction.js';
+import Key from './Key.js';
+import Sca from './Sca.js';
+import IDBIndex from './IDBIndex.js';
+import CFG from './CFG.js';
 
 /**
  * The IndexedDB Cursor Object
@@ -54,17 +32,17 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
  */
 function IDBCursor(range, direction, store, source, keyColumnName, valueColumnName, count) {
     // Calling openCursor on an index or objectstore with null is allowed but we treat it as undefined internally
-    _IDBTransaction2.default.__assertActive(store.transaction);
+    IDBTransaction.__assertActive(store.transaction);
     if (range === null) {
         range = undefined;
     }
-    if (util.instanceOf(range, _IDBKeyRange.IDBKeyRange)) {
+    if (util.instanceOf(range, IDBKeyRange)) {
         // We still need to validate IDBKeyRange-like objects (the above check is based on duck-typing)
         if (!range.toString() !== '[object IDBKeyRange]') {
-            range = new _IDBKeyRange.IDBKeyRange(range.lower, range.upper, range.lowerOpen, range.upperOpen);
+            range = new IDBKeyRange(range.lower, range.upper, range.lowerOpen, range.upperOpen);
         }
     } else if (range !== undefined) {
-        range = new _IDBKeyRange.IDBKeyRange(range, range, false, false);
+        range = new IDBKeyRange(range, range, false, false);
     }
     if (direction !== undefined && !['next', 'prev', 'nextunique', 'prevunique'].includes(direction)) {
         throw new TypeError(direction + 'is not a valid cursor direction');
@@ -80,60 +58,60 @@ function IDBCursor(range, direction, store, source, keyColumnName, valueColumnNa
 
     this.__store = store;
     this.__range = range;
-    this.__req = new _IDBRequest.IDBRequest();
+    this.__req = new IDBRequest();
     this.__req.__source = source;
     this.__req.__transaction = this.__store.transaction;
     this.__keyColumnName = keyColumnName;
     this.__valueColumnName = valueColumnName;
     this.__keyOnly = valueColumnName === 'key';
-    this.__valueDecoder = this.__keyOnly ? _Key2.default : _Sca2.default;
+    this.__valueDecoder = this.__keyOnly ? Key : Sca;
     this.__count = count;
     this.__prefetchedIndex = -1;
-    this.__indexSource = util.instanceOf(source, _IDBIndex2.default);
+    this.__indexSource = util.instanceOf(source, IDBIndex);
     this.__multiEntryIndex = this.__indexSource ? source.multiEntry : false;
     this.__unique = this.direction.includes('unique');
     this.__sqlDirection = ['prev', 'prevunique'].includes(this.direction) ? 'DESC' : 'ASC';
 
     if (range !== undefined) {
         // Encode the key range and cache the encoded values, so we don't have to re-encode them over and over
-        range.__lowerCached = range.lower !== undefined && _Key2.default.encode(range.lower, this.__multiEntryIndex);
-        range.__upperCached = range.upper !== undefined && _Key2.default.encode(range.upper, this.__multiEntryIndex);
+        range.__lowerCached = range.lower !== undefined && Key.encode(range.lower, this.__multiEntryIndex);
+        range.__upperCached = range.upper !== undefined && Key.encode(range.upper, this.__multiEntryIndex);
     }
     this.__gotValue = true;
     this['continue']();
 }
 
-IDBCursor.prototype.__find = function (...args /* key, tx, success, error, recordsToLoad */) {
+IDBCursor.prototype.__find = function () /* key, tx, success, error, recordsToLoad */{
     if (this.__multiEntryIndex) {
-        this.__findMultiEntry(...args);
+        this.__findMultiEntry.apply(this, arguments);
     } else {
-        this.__findBasic(...args);
+        this.__findBasic.apply(this, arguments);
     }
 };
 
 IDBCursor.prototype.__findBasic = function (key, tx, success, error, recordsToLoad) {
-    const continueCall = recordsToLoad !== undefined;
+    var continueCall = recordsToLoad !== undefined;
     recordsToLoad = recordsToLoad || 1;
 
-    const me = this;
-    const quotedKeyColumnName = util.quote(me.__keyColumnName);
-    let sql = ['SELECT * FROM', util.escapeStore(me.__store.name)];
-    const sqlValues = [];
+    var me = this;
+    var quotedKeyColumnName = util.quote(me.__keyColumnName);
+    var sql = ['SELECT * FROM', util.escapeStore(me.__store.name)];
+    var sqlValues = [];
     sql.push('WHERE', quotedKeyColumnName, 'NOT NULL');
-    (0, _IDBKeyRange.setSQLForRange)(me.__range, quotedKeyColumnName, sql, sqlValues, true, true);
+    setSQLForRange(me.__range, quotedKeyColumnName, sql, sqlValues, true, true);
 
     // Determine the ORDER BY direction based on the cursor.
-    const direction = me.__sqlDirection;
-    const op = direction === 'ASC' ? '>' : '<';
+    var direction = me.__sqlDirection;
+    var op = direction === 'ASC' ? '>' : '<';
 
     if (key !== undefined) {
         sql.push('AND', quotedKeyColumnName, op + '= ?');
-        _Key2.default.convertValueToKey(key);
-        sqlValues.push(_Key2.default.encode(key));
+        Key.convertValueToKey(key);
+        sqlValues.push(Key.encode(key));
     } else if (continueCall && me.__key !== undefined) {
         sql.push('AND', quotedKeyColumnName, op + ' ?');
-        _Key2.default.convertValueToKey(me.__key);
-        sqlValues.push(_Key2.default.encode(me.__key));
+        Key.convertValueToKey(me.__key);
+        sqlValues.push(Key.encode(me.__key));
     }
 
     if (!me.__count) {
@@ -155,7 +133,7 @@ IDBCursor.prototype.__findBasic = function (key, tx, success, error, recordsToLo
         sql.push('LIMIT', recordsToLoad);
     }
     sql = sql.join(' ');
-    _CFG2.default.DEBUG && console.log(sql, sqlValues);
+    CFG.DEBUG && console.log(sql, sqlValues);
 
     tx.executeSql(sql, sqlValues, function (tx, data) {
         if (me.__count) {
@@ -163,32 +141,32 @@ IDBCursor.prototype.__findBasic = function (key, tx, success, error, recordsToLo
         } else if (data.rows.length > 1) {
             me.__prefetchedIndex = 0;
             me.__prefetchedData = data.rows;
-            _CFG2.default.DEBUG && console.log('Preloaded ' + me.__prefetchedData.length + ' records for cursor');
+            CFG.DEBUG && console.log('Preloaded ' + me.__prefetchedData.length + ' records for cursor');
             me.__decode(data.rows.item(0), success);
         } else if (data.rows.length === 1) {
             me.__decode(data.rows.item(0), success);
         } else {
-            _CFG2.default.DEBUG && console.log('Reached end of cursors');
+            CFG.DEBUG && console.log('Reached end of cursors');
             success(undefined, undefined, undefined);
         }
     }, function (tx, err) {
-        _CFG2.default.DEBUG && console.log('Could not execute Cursor.continue', sql, sqlValues);
+        CFG.DEBUG && console.log('Could not execute Cursor.continue', sql, sqlValues);
         error(err);
     });
 };
 
 IDBCursor.prototype.__findMultiEntry = function (key, tx, success, error) {
-    const me = this;
+    var me = this;
 
     if (me.__prefetchedData && me.__prefetchedData.length === me.__prefetchedIndex) {
-        _CFG2.default.DEBUG && console.log('Reached end of multiEntry cursor');
+        CFG.DEBUG && console.log('Reached end of multiEntry cursor');
         success(undefined, undefined, undefined);
         return;
     }
 
-    const quotedKeyColumnName = util.quote(me.__keyColumnName);
-    let sql = ['SELECT * FROM', util.escapeStore(me.__store.name)];
-    const sqlValues = [];
+    var quotedKeyColumnName = util.quote(me.__keyColumnName);
+    var sql = ['SELECT * FROM', util.escapeStore(me.__store.name)];
+    var sqlValues = [];
     sql.push('WHERE', quotedKeyColumnName, 'NOT NULL');
     if (me.__range && me.__range.lower !== undefined && Array.isArray(me.__range.upper)) {
         if (me.__range.upper.indexOf(me.__range.lower) === 0) {
@@ -198,17 +176,17 @@ IDBCursor.prototype.__findMultiEntry = function (key, tx, success, error) {
     }
 
     // Determine the ORDER BY direction based on the cursor.
-    const direction = me.__sqlDirection;
-    const op = direction === 'ASC' ? '>' : '<';
+    var direction = me.__sqlDirection;
+    var op = direction === 'ASC' ? '>' : '<';
 
     if (key !== undefined) {
         sql.push('AND', quotedKeyColumnName, op + '= ?');
-        _Key2.default.convertValueToKey(key);
-        sqlValues.push(_Key2.default.encode(key));
+        Key.convertValueToKey(key);
+        sqlValues.push(Key.encode(key));
     } else if (me.__key !== undefined) {
         sql.push('AND', quotedKeyColumnName, op + ' ?');
-        _Key2.default.convertValueToKey(me.__key);
-        sqlValues.push(_Key2.default.encode(me.__key));
+        Key.convertValueToKey(me.__key);
+        sqlValues.push(Key.encode(me.__key));
     }
 
     if (!me.__count) {
@@ -229,80 +207,86 @@ IDBCursor.prototype.__findMultiEntry = function (key, tx, success, error) {
         }
     }
     sql = sql.join(' ');
-    _CFG2.default.DEBUG && console.log(sql, sqlValues);
+    CFG.DEBUG && console.log(sql, sqlValues);
 
     tx.executeSql(sql, sqlValues, function (tx, data) {
         if (data.rows.length > 0) {
-            if (me.__count) {
-                // Avoid caching and other processing below
-                let ct = 0;
-                for (let i = 0; i < data.rows.length; i++) {
-                    const rowItem = data.rows.item(i);
-                    const rowKey = _Key2.default.decode(rowItem[me.__keyColumnName], true);
-                    const matches = _Key2.default.findMultiEntryMatches(rowKey, me.__range);
-                    ct += matches.length;
-                }
-                success(undefined, ct, undefined);
-                return;
-            }
-            const rows = [];
-            for (let i = 0; i < data.rows.length; i++) {
-                const rowItem = data.rows.item(i);
-                const rowKey = _Key2.default.decode(rowItem[me.__keyColumnName], true);
-                const matches = _Key2.default.findMultiEntryMatches(rowKey, me.__range);
-
-                for (let j = 0; j < matches.length; j++) {
-                    const matchingKey = matches[j];
-                    const clone = {
-                        matchingKey: _Key2.default.encode(matchingKey, true),
-                        key: rowItem.key
-                    };
-                    clone[me.__keyColumnName] = rowItem[me.__keyColumnName];
-                    clone[me.__valueColumnName] = rowItem[me.__valueColumnName];
-                    rows.push(clone);
-                }
-            }
-            const reverse = me.direction.indexOf('prev') === 0;
-            rows.sort(function (a, b) {
-                if (a.matchingKey.replace('[', 'z') < b.matchingKey.replace('[', 'z')) {
-                    return reverse ? 1 : -1;
-                }
-                if (a.matchingKey.replace('[', 'z') > b.matchingKey.replace('[', 'z')) {
-                    return reverse ? -1 : 1;
-                }
-                if (a.key < b.key) {
-                    return me.direction === 'prev' ? 1 : -1;
-                }
-                if (a.key > b.key) {
-                    return me.direction === 'prev' ? -1 : 1;
-                }
-                return 0;
-            });
-
-            if (rows.length > 1) {
-                me.__prefetchedIndex = 0;
-                me.__prefetchedData = {
-                    data: rows,
-                    length: rows.length,
-                    item: function (index) {
-                        return this.data[index];
+            var _ret = function () {
+                if (me.__count) {
+                    // Avoid caching and other processing below
+                    var ct = 0;
+                    for (var i = 0; i < data.rows.length; i++) {
+                        var rowItem = data.rows.item(i);
+                        var rowKey = Key.decode(rowItem[me.__keyColumnName], true);
+                        var matches = Key.findMultiEntryMatches(rowKey, me.__range);
+                        ct += matches.length;
                     }
-                };
-                _CFG2.default.DEBUG && console.log('Preloaded ' + me.__prefetchedData.length + ' records for multiEntry cursor');
-                me.__decode(rows[0], success);
-            } else if (rows.length === 1) {
-                _CFG2.default.DEBUG && console.log('Reached end of multiEntry cursor');
-                me.__decode(rows[0], success);
-            } else {
-                _CFG2.default.DEBUG && console.log('Reached end of multiEntry cursor');
-                success(undefined, undefined, undefined);
-            }
+                    success(undefined, ct, undefined);
+                    return {
+                        v: void 0
+                    };
+                }
+                var rows = [];
+                for (var _i = 0; _i < data.rows.length; _i++) {
+                    var _rowItem = data.rows.item(_i);
+                    var _rowKey = Key.decode(_rowItem[me.__keyColumnName], true);
+                    var _matches = Key.findMultiEntryMatches(_rowKey, me.__range);
+
+                    for (var j = 0; j < _matches.length; j++) {
+                        var matchingKey = _matches[j];
+                        var clone = {
+                            matchingKey: Key.encode(matchingKey, true),
+                            key: _rowItem.key
+                        };
+                        clone[me.__keyColumnName] = _rowItem[me.__keyColumnName];
+                        clone[me.__valueColumnName] = _rowItem[me.__valueColumnName];
+                        rows.push(clone);
+                    }
+                }
+                var reverse = me.direction.indexOf('prev') === 0;
+                rows.sort(function (a, b) {
+                    if (a.matchingKey.replace('[', 'z') < b.matchingKey.replace('[', 'z')) {
+                        return reverse ? 1 : -1;
+                    }
+                    if (a.matchingKey.replace('[', 'z') > b.matchingKey.replace('[', 'z')) {
+                        return reverse ? -1 : 1;
+                    }
+                    if (a.key < b.key) {
+                        return me.direction === 'prev' ? 1 : -1;
+                    }
+                    if (a.key > b.key) {
+                        return me.direction === 'prev' ? -1 : 1;
+                    }
+                    return 0;
+                });
+
+                if (rows.length > 1) {
+                    me.__prefetchedIndex = 0;
+                    me.__prefetchedData = {
+                        data: rows,
+                        length: rows.length,
+                        item: function item(index) {
+                            return this.data[index];
+                        }
+                    };
+                    CFG.DEBUG && console.log('Preloaded ' + me.__prefetchedData.length + ' records for multiEntry cursor');
+                    me.__decode(rows[0], success);
+                } else if (rows.length === 1) {
+                    CFG.DEBUG && console.log('Reached end of multiEntry cursor');
+                    me.__decode(rows[0], success);
+                } else {
+                    CFG.DEBUG && console.log('Reached end of multiEntry cursor');
+                    success(undefined, undefined, undefined);
+                }
+            }();
+
+            if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
         } else {
-            _CFG2.default.DEBUG && console.log('Reached end of multiEntry cursor');
+            CFG.DEBUG && console.log('Reached end of multiEntry cursor');
             success(undefined, undefined, undefined);
         }
     }, function (tx, err) {
-        _CFG2.default.DEBUG && console.log('Could not execute Cursor.continue', sql, sqlValues);
+        CFG.DEBUG && console.log('Could not execute Cursor.continue', sql, sqlValues);
         error(err);
     });
 };
@@ -312,7 +296,7 @@ IDBCursor.prototype.__findMultiEntry = function (key, tx, success, error) {
  * @private
  */
 IDBCursor.prototype.__onsuccess = function (success) {
-    const me = this;
+    var me = this;
     return function (key, value, primaryKey) {
         me.__gotValue = true;
         if (me.__count) {
@@ -321,7 +305,7 @@ IDBCursor.prototype.__onsuccess = function (success) {
             me.__key = key === undefined ? null : key;
             me.__primaryKey = primaryKey === undefined ? null : primaryKey;
             me.__value = value === undefined ? null : value;
-            const result = key === undefined ? null : me;
+            var result = key === undefined ? null : me;
             success(result, me.__req);
         }
     };
@@ -338,15 +322,15 @@ IDBCursor.prototype.__decode = function (rowItem, callback) {
         }
         this.__matchedKeys[rowItem.matchingKey] = true;
     }
-    const key = _Key2.default.decode(this.__multiEntryIndex ? rowItem.matchingKey : rowItem[this.__keyColumnName], this.__multiEntryIndex);
-    const val = this.__valueDecoder.decode(rowItem[this.__valueColumnName]);
-    const primaryKey = _Key2.default.decode(rowItem.key);
+    var key = Key.decode(this.__multiEntryIndex ? rowItem.matchingKey : rowItem[this.__keyColumnName], this.__multiEntryIndex);
+    var val = this.__valueDecoder.decode(rowItem[this.__valueColumnName]);
+    var primaryKey = Key.decode(rowItem.key);
     callback(key, val, primaryKey);
 };
 
 IDBCursor.prototype.__sourceOrEffectiveObjStoreDeleted = function () {
     if (!this.__store.transaction.db.objectStoreNames.contains(this.__store.name) || this.__indexSource && !this.__store.indexNames.contains(this.source.name)) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'The cursor\'s source or effective object store has been deleted');
+        throw createDOMException('InvalidStateError', 'The cursor\'s source or effective object store has been deleted');
     }
 };
 
@@ -363,20 +347,20 @@ IDBCursor.prototype.__clearFromCache = function () {
 };
 
 IDBCursor.prototype.__continue = function (key, advanceContinue) {
-    const me = this;
-    const recordsToPreloadOnContinue = me.__advanceCount || _CFG2.default.cursorPreloadPackSize || 100;
-    const advanceState = me.__advanceCount !== undefined;
-    _IDBTransaction2.default.__assertActive(me.__store.transaction);
+    var me = this;
+    var recordsToPreloadOnContinue = me.__advanceCount || CFG.cursorPreloadPackSize || 100;
+    var advanceState = me.__advanceCount !== undefined;
+    IDBTransaction.__assertActive(me.__store.transaction);
     me.__sourceOrEffectiveObjStoreDeleted();
     if (!me.__gotValue && !advanceContinue) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
+        throw createDOMException('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
     }
-    if (key !== undefined) _Key2.default.convertValueToKey(key);
+    if (key !== undefined) Key.convertValueToKey(key);
 
     if (key !== undefined) {
-        const cmpResult = (0, _IDBFactory.cmp)(key, me.key);
+        var cmpResult = cmp(key, me.key);
         if (cmpResult === 0 || me.direction.includes('next') && cmpResult === -1 || me.direction.includes('prev') && cmpResult === 1) {
-            throw (0, _DOMException.createDOMException)('DataError', 'Cannot ' + (advanceState ? 'advance' : 'continue') + ' the cursor in an unexpected direction');
+            throw createDOMException('DataError', 'Cannot ' + (advanceState ? 'advance' : 'continue') + ' the cursor in an unexpected direction');
         }
     }
 
@@ -410,8 +394,8 @@ IDBCursor.prototype.__continue = function (key, advanceContinue) {
                         triggerSuccess(k, val, primKey);
                     }
                     if (me.__unique && !me.__multiEntryIndex) {
-                        _Sca2.default.encode(val, function (encVal) {
-                            _Sca2.default.encode(me.value, function (encMeVal) {
+                        Sca.encode(val, function (encVal) {
+                            Sca.encode(me.value, function (encMeVal) {
                                 if (encVal === encMeVal) {
                                     cursorContinue(tx, args, success, error);
                                     return;
@@ -428,9 +412,9 @@ IDBCursor.prototype.__continue = function (key, advanceContinue) {
         }
 
         // No (or not enough) pre-fetched data, do query
-        me.__find(key, tx, triggerSuccess, function (...args) {
+        me.__find(key, tx, triggerSuccess, function () {
             me.__advanceCount = undefined;
-            error(...args);
+            error.apply(undefined, arguments);
         }, recordsToPreloadOnContinue);
     });
 };
@@ -445,7 +429,7 @@ IDBCursor.prototype.continuePrimaryKey = function (key, primaryKey) {};
 */
 
 IDBCursor.prototype.advance = function (count) {
-    const me = this;
+    var me = this;
     if (!Number.isFinite(count) || count <= 0) {
         throw new TypeError('Count is invalid - 0 or negative: ' + count);
     }
@@ -457,47 +441,47 @@ IDBCursor.prototype.advance = function (count) {
 };
 
 IDBCursor.prototype.update = function (valueToUpdate) {
-    const me = this;
+    var me = this;
     if (!arguments.length) throw new TypeError('A value must be passed to update()');
-    _IDBTransaction2.default.__assertActive(me.__store.transaction);
+    IDBTransaction.__assertActive(me.__store.transaction);
     me.__store.transaction.__assertWritable();
     me.__sourceOrEffectiveObjStoreDeleted();
     if (!me.__gotValue) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
+        throw createDOMException('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
     }
     if (me.__keyOnly) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
+        throw createDOMException('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
     }
     util.throwIfNotClonable(valueToUpdate, 'The data to be updated could not be cloned by the internal structured cloning algorithm.');
     if (me.__store.keyPath !== null) {
-        const evaluatedKey = me.__store.__validateKeyAndValue(valueToUpdate);
+        var evaluatedKey = me.__store.__validateKeyAndValue(valueToUpdate);
         if (me.primaryKey !== evaluatedKey) {
-            throw (0, _DOMException.createDOMException)('DataError', 'The key of the supplied value to `update` is not equal to the cursor\'s effective key');
+            throw createDOMException('DataError', 'The key of the supplied value to `update` is not equal to the cursor\'s effective key');
         }
     }
     return me.__store.transaction.__addToTransactionQueue(function cursorUpdate(tx, args, success, error) {
-        const key = me.key;
-        const primaryKey = me.primaryKey;
-        const store = me.__store;
-        _Sca2.default.encode(valueToUpdate, function (encoded) {
-            const value = _Sca2.default.decode(encoded);
-            _Sca2.default.encode(value, function (encoded) {
+        var key = me.key;
+        var primaryKey = me.primaryKey;
+        var store = me.__store;
+        Sca.encode(valueToUpdate, function (encoded) {
+            var value = Sca.decode(encoded);
+            Sca.encode(value, function (encoded) {
                 // First try to delete if the record exists
-                _Key2.default.convertValueToKey(primaryKey);
-                const sql = 'DELETE FROM ' + util.escapeStore(store.name) + ' WHERE key = ?';
-                const encodedPrimaryKey = _Key2.default.encode(primaryKey);
-                _CFG2.default.DEBUG && console.log(sql, encoded, key, primaryKey, encodedPrimaryKey);
+                Key.convertValueToKey(primaryKey);
+                var sql = 'DELETE FROM ' + util.escapeStore(store.name) + ' WHERE key = ?';
+                var encodedPrimaryKey = Key.encode(primaryKey);
+                CFG.DEBUG && console.log(sql, encoded, key, primaryKey, encodedPrimaryKey);
 
                 tx.executeSql(sql, [encodedPrimaryKey], function (tx, data) {
-                    _CFG2.default.DEBUG && console.log('Did the row with the', primaryKey, 'exist? ', data.rowsAffected);
+                    CFG.DEBUG && console.log('Did the row with the', primaryKey, 'exist? ', data.rowsAffected);
 
                     store.__deriveKey(tx, value, key, function (primaryKey, useNewForAutoInc) {
-                        store.__insertData(tx, encoded, value, primaryKey, key, useNewForAutoInc, function (...args) {
-                            store.__cursors.forEach(cursor => {
+                        store.__insertData(tx, encoded, value, primaryKey, key, useNewForAutoInc, function () {
+                            store.__cursors.forEach(function (cursor) {
                                 cursor.__deleteFromCache();
                                 cursor.__addToCache();
                             });
-                            success(...args);
+                            success.apply(undefined, arguments);
                         }, error);
                     }, function (tx, err) {
                         error(err);
@@ -509,24 +493,24 @@ IDBCursor.prototype.update = function (valueToUpdate) {
 };
 
 IDBCursor.prototype['delete'] = function () {
-    const me = this;
-    _IDBTransaction2.default.__assertActive(me.__store.transaction);
+    var me = this;
+    IDBTransaction.__assertActive(me.__store.transaction);
     me.__store.transaction.__assertWritable();
     me.__sourceOrEffectiveObjStoreDeleted();
     if (!me.__gotValue) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
+        throw createDOMException('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
     }
     if (me.__keyOnly) {
-        throw (0, _DOMException.createDOMException)('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
+        throw createDOMException('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
     }
     return this.__store.transaction.__addToTransactionQueue(function cursorDelete(tx, args, success, error) {
         me.__find(undefined, tx, function (key, value, primaryKey) {
-            const sql = 'DELETE FROM  ' + util.escapeStore(me.__store.name) + ' WHERE key = ?';
-            _CFG2.default.DEBUG && console.log(sql, key, primaryKey);
-            _Key2.default.convertValueToKey(primaryKey);
-            tx.executeSql(sql, [_Key2.default.encode(primaryKey)], function (tx, data) {
+            var sql = 'DELETE FROM  ' + util.escapeStore(me.__store.name) + ' WHERE key = ?';
+            CFG.DEBUG && console.log(sql, key, primaryKey);
+            Key.convertValueToKey(primaryKey);
+            tx.executeSql(sql, [Key.encode(primaryKey)], function (tx, data) {
                 if (data.rowsAffected === 1) {
-                    me.__store.__cursors.forEach(cursor => {
+                    me.__store.__cursors.forEach(function (cursor) {
                         cursor.__deleteFromCache();
                     });
                     success(undefined);
@@ -546,13 +530,25 @@ IDBCursor.prototype.toString = function () {
 
 util.defineReadonlyProperties(IDBCursor.prototype, ['key', 'primaryKey']);
 
-class IDBCursorWithValue extends IDBCursor {
-    toString() {
-        return '[object IDBCursorWithValue]';
+var IDBCursorWithValue = function (_IDBCursor) {
+    _inherits(IDBCursorWithValue, _IDBCursor);
+
+    function IDBCursorWithValue() {
+        _classCallCheck(this, IDBCursorWithValue);
+
+        return _possibleConstructorReturn(this, (IDBCursorWithValue.__proto__ || Object.getPrototypeOf(IDBCursorWithValue)).apply(this, arguments));
     }
-}
+
+    _createClass(IDBCursorWithValue, [{
+        key: 'toString',
+        value: function toString() {
+            return '[object IDBCursorWithValue]';
+        }
+    }]);
+
+    return IDBCursorWithValue;
+}(IDBCursor);
 
 util.defineReadonlyProperties(IDBCursorWithValue.prototype, 'value');
 
-exports.IDBCursor = IDBCursor;
-exports.IDBCursorWithValue = IDBCursorWithValue;
+export { IDBCursor, IDBCursorWithValue };

@@ -1,21 +1,5 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.createDOMException = exports.DOMException = exports.findError = exports.logError = undefined;
-
-var _CFG = require('./CFG.js');
-
-var _CFG2 = _interopRequireDefault(_CFG);
-
-var _util = require('./util.js');
-
-var util = _interopRequireWildcard(_util);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+import CFG from './CFG.js';
+import * as util from './util.js';
 
 /**
  * Creates a native DOMException, for browsers that support it
@@ -30,7 +14,7 @@ function createNativeDOMException(name, message) {
  * @returns {Error}
  */
 function createError(name, message) {
-    const e = new Error(message); // DOMException uses the same `toString` as `Error`, so no need to add
+    var e = new Error(message); // DOMException uses the same `toString` as `Error`, so no need to add
     e.name = name || 'DOMException';
     e.message = message;
     return e;
@@ -43,12 +27,12 @@ function createError(name, message) {
  * @param {string|Error|null} error
  */
 function logError(name, message, error) {
-    if (_CFG2.default.DEBUG) {
+    if (CFG.DEBUG) {
         if (error && error.message) {
             error = error.message;
         }
 
-        const method = typeof console.error === 'function' ? 'error' : 'log';
+        var method = typeof console.error === 'function' ? 'error' : 'log';
         console[method](name + ': ' + message + '. ' + (error || ''));
         console.trace && console.trace();
     }
@@ -65,13 +49,13 @@ function isErrorOrDOMErrorOrDOMException(obj) {
  * @returns {Error|DOMException|undefined}
  */
 function findError(args) {
-    let err;
+    var err = void 0;
     if (args) {
         if (args.length === 1) {
             return args[0];
         }
-        for (let i = 0; i < args.length; i++) {
-            const arg = args[i];
+        for (var i = 0; i < args.length; i++) {
+            var arg = args[i];
             if (isErrorOrDOMErrorOrDOMException(arg)) {
                 return arg;
             } else if (arg && typeof arg.message === 'string') {
@@ -82,7 +66,7 @@ function findError(args) {
     return err;
 };
 
-let test,
+var test = void 0,
     useNativeDOMException = false;
 
 // Test whether we can use the browser's native DOMException class
@@ -94,22 +78,20 @@ try {
     }
 } catch (e) {}
 
-let createDOMException, shimDOMException;
+var createDOMException = void 0,
+    shimDOMException = void 0;
 if (useNativeDOMException) {
-    exports.DOMException = shimDOMException = DOMException;
-    exports.createDOMException = createDOMException = function (name, message, error) {
+    shimDOMException = DOMException;
+    createDOMException = function createDOMException(name, message, error) {
         logError(name, message, error);
         return createNativeDOMException(name, message);
     };
 } else {
-    exports.DOMException = shimDOMException = Error;
-    exports.createDOMException = createDOMException = function (name, message, error) {
+    shimDOMException = Error;
+    createDOMException = function createDOMException(name, message, error) {
         logError(name, message, error);
         return createError(name, message);
     };
 }
 
-exports.logError = logError;
-exports.findError = findError;
-exports.DOMException = shimDOMException;
-exports.createDOMException = createDOMException;
+export { logError, findError, shimDOMException as DOMException, createDOMException };

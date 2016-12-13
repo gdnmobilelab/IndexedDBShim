@@ -1,24 +1,14 @@
-'use strict';
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = exports.findMultiEntryMatches = exports.isKeyInRange = exports.isMultiEntryMatch = exports.setValue = exports.evaluateKeyPathOnValue = exports.extractKeyFromValueUsingKeyPath = exports.convertValueToKeyMultiEntry = exports.convertValueToKey = exports.decode = exports.encode = undefined;
+import { createDOMException } from './DOMException.js';
+import * as util from './util.js';
 
-var _DOMException = require('./DOMException.js');
-
-var _util = require('./util.js');
-
-var util = _interopRequireWildcard(_util);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-let Key = {};
+var Key = {};
 
 /**
  * Encodes the keys based on their types. This is required to maintain collations
  */
-const collations = ['undefined', 'number', 'date', 'string', 'array'];
+var collations = ['undefined', 'number', 'date', 'string', 'array'];
 
 /**
  * The sign values for numbers, ordered from least to greatest.
@@ -29,16 +19,16 @@ const collations = ['undefined', 'number', 'date', 'string', 'array'];
  *  - "largePositive": Positive values greater than or equal to one.
  *  - "positiveInfinity": Sorts above all other values.
  */
-const signValues = ['negativeInfinity', 'bigNegative', 'smallNegative', 'smallPositive', 'bigPositive', 'positiveInfinity'];
+var signValues = ['negativeInfinity', 'bigNegative', 'smallNegative', 'smallPositive', 'bigPositive', 'positiveInfinity'];
 
 // Todo: Support `ArrayBuffer`/Views on buffers (`TypedArray` or `DataView`)
-const types = {
+var types = {
     // Undefined is not a valid key type.  It's only used when there is no key.
     undefined: {
-        encode: function (key) {
+        encode: function encode(key) {
             return collations.indexOf('undefined') + '-';
         },
-        decode: function (key) {
+        decode: function decode(key) {
             return undefined;
         }
     },
@@ -56,17 +46,17 @@ const types = {
     number: {
         // The encode step checks for six numeric cases and generates 14-digit encoded
         // sign-exponent-mantissa strings.
-        encode: function (key) {
-            let key32 = Math.abs(key).toString(32);
+        encode: function encode(key) {
+            var key32 = Math.abs(key).toString(32);
             // Get the index of the decimal.
-            const decimalIndex = key32.indexOf('.');
+            var decimalIndex = key32.indexOf('.');
             // Remove the decimal.
             key32 = decimalIndex !== -1 ? key32.replace('.', '') : key32;
             // Get the index of the first significant digit.
-            const significantDigitIndex = key32.search(/[^0]/);
+            var significantDigitIndex = key32.search(/[^0]/);
             // Truncate leading zeros.
             key32 = key32.slice(significantDigitIndex);
-            let sign,
+            var sign = void 0,
                 exponent = zeros(2),
                 mantissa = zeros(11);
 
@@ -109,10 +99,10 @@ const types = {
         // The decode step must interpret the sign, reflip values encoded as the 32's complements,
         // apply signs to the exponent and mantissa, do the base-32 power operation, and return
         // the original JavaScript number values.
-        decode: function (key) {
-            const sign = +key.substr(2, 1);
-            let exponent = key.substr(3, 2);
-            let mantissa = key.substr(5, 11);
+        decode: function decode(key) {
+            var sign = +key.substr(2, 1);
+            var exponent = key.substr(3, 2);
+            var mantissa = key.substr(5, 11);
 
             switch (signValues[sign]) {
                 case 'negativeInfinity':
@@ -147,14 +137,14 @@ const types = {
     // This effectively doubles the size of every string, but it ensures that when two arrays of strings are compared,
     // the indexes of each string's characters line up with each other.
     string: {
-        encode: function (key, inArray) {
+        encode: function encode(key, inArray) {
             if (inArray) {
                 // prepend each character with a dash, and append a space to the end
                 key = key.replace(/(.)/g, '-$1') + ' ';
             }
             return collations.indexOf('string') + '-' + key;
         },
-        decode: function (key, inArray) {
+        decode: function decode(key, inArray) {
             key = key.slice(2);
             if (inArray) {
                 // remove the space at the end, and the dash before each character
@@ -167,22 +157,22 @@ const types = {
     // Arrays are encoded as JSON strings.
     // An extra, value is added to each array during encoding to make empty arrays sort correctly.
     array: {
-        encode: function (key) {
-            const encoded = [];
-            for (let i = 0; i < key.length; i++) {
-                const item = key[i];
-                const encodedItem = encode(item, true); // encode the array item
+        encode: function encode(key) {
+            var encoded = [];
+            for (var i = 0; i < key.length; i++) {
+                var item = key[i];
+                var encodedItem = _encode(item, true); // encode the array item
                 encoded[i] = encodedItem;
             }
             encoded.push(collations.indexOf('undefined') + '-'); // append an extra item, so empty arrays sort correctly
             return collations.indexOf('array') + '-' + JSON.stringify(encoded);
         },
-        decode: function (key) {
-            const decoded = JSON.parse(key.slice(2));
+        decode: function decode(key) {
+            var decoded = JSON.parse(key.slice(2));
             decoded.pop(); // remove the extra item
-            for (let i = 0; i < decoded.length; i++) {
-                const item = decoded[i];
-                const decodedItem = decode(item, true); // decode the item
+            for (var i = 0; i < decoded.length; i++) {
+                var item = decoded[i];
+                var decodedItem = _decode(item, true); // decode the item
                 decoded[i] = decodedItem;
             }
             return decoded;
@@ -191,10 +181,10 @@ const types = {
 
     // Dates are encoded as ISO 8601 strings, in UTC time zone.
     date: {
-        encode: function (key) {
+        encode: function encode(key) {
             return collations.indexOf('date') + '-' + key.toJSON();
         },
-        decode: function (key) {
+        decode: function decode(key) {
             return new Date(key.slice(2));
         }
     }
@@ -224,8 +214,8 @@ function padBase32Mantissa(s) {
  * @param {string} encoded
  */
 function flipBase32(encoded) {
-    let flipped = '';
-    for (let i = 0; i < encoded.length; i++) {
+    var flipped = '';
+    for (var i = 0; i < encoded.length; i++) {
         flipped += (31 - parseInt(encoded[i], 32)).toString(32);
     }
     return flipped;
@@ -249,13 +239,13 @@ function pow32(mantissa, exponent) {
         return roundToPrecision(parseInt(mantissa, 32) * Math.pow(32, exponent - 10));
     } else {
         if (exponent < 11) {
-            let whole = mantissa.slice(0, exponent);
+            var whole = mantissa.slice(0, exponent);
             whole = parseInt(whole, 32);
-            let fraction = mantissa.slice(exponent);
+            var fraction = mantissa.slice(exponent);
             fraction = parseInt(fraction, 32) * Math.pow(32, exponent - 11);
             return roundToPrecision(whole + fraction);
         } else {
-            const expansion = mantissa + zeros(exponent - 11);
+            var expansion = mantissa + zeros(exponent - 11);
             return parseInt(expansion, 32);
         }
     }
@@ -275,7 +265,7 @@ function roundToPrecision(num, precision) {
  * @return {string}
  */
 function zeros(n) {
-    let result = '';
+    var result = '';
     while (n--) {
         result = result + '0';
     }
@@ -298,7 +288,7 @@ function getType(key) {
     if (Array.isArray(key)) return 'array';
     if (util.isDate(key)) return 'date';
     // if (util.isArrayBufferOrView(key)) return 'ArrayBuffer'; // Todo: Uncomment when supported
-    return typeof key;
+    return typeof key === 'undefined' ? 'undefined' : _typeof(key);
 }
 
 /**
@@ -306,7 +296,7 @@ function getType(key) {
  *   Arrays (or, once supported, ArrayBuffer) objects
  */
 function convertValueToKey(key, arrayRefs, multiEntry) {
-    const type = getType(key);
+    var type = getType(key);
     switch (type) {
         case 'ArrayBuffer':
             // Copy bytes once implemented (not a possible type yet)
@@ -314,12 +304,12 @@ function convertValueToKey(key, arrayRefs, multiEntry) {
         case 'array':
             arrayRefs = arrayRefs || [];
             arrayRefs.push(key);
-            const newKeys = [];
-            for (let i = 0; i < key.length; i++) {
+            var newKeys = [];
+            for (var i = 0; i < key.length; i++) {
                 // We cannot iterate here with array extras as we must ensure sparse arrays are invalidated
-                const item = key[i];
-                if (arrayRefs.includes(item)) throw (0, _DOMException.createDOMException)('DataError', 'An array key cannot be circular');
-                let newKey;
+                var item = key[i];
+                if (arrayRefs.includes(item)) throw createDOMException('DataError', 'An array key cannot be circular');
+                var newKey = void 0;
                 try {
                     newKey = convertValueToKey(item, arrayRefs);
                 } catch (err) {
@@ -342,7 +332,7 @@ function convertValueToKey(key, arrayRefs, multiEntry) {
             // Other `typeof` types which are not valid keys:
             //    'undefined', 'boolean', 'object' (including `null`), 'symbol', 'function'
             if (!['string', 'number'].includes(type) || Number.isNaN(key)) {
-                throw (0, _DOMException.createDOMException)('DataError', 'Not a valid key');
+                throw createDOMException('DataError', 'Not a valid key');
             }
             return key;
     }
@@ -353,7 +343,7 @@ function convertValueToKeyMultiEntry(key) {
 }
 
 function extractKeyFromValueUsingKeyPath(value, keyPath, multiEntry) {
-    const key = evaluateKeyPathOnValue(value, keyPath, multiEntry);
+    var key = evaluateKeyPathOnValue(value, keyPath, multiEntry);
     if (!multiEntry) {
         return convertValueToKey(key);
     }
@@ -367,26 +357,32 @@ function extractKeyFromValueUsingKeyPath(value, keyPath, multiEntry) {
  */
 function evaluateKeyPathOnValue(value, keyPath, multiEntry) {
     if (Array.isArray(keyPath)) {
-        const arrayValue = [];
-        return keyPath.some(kpPart => {
-            // If W3C tests are accurate, it appears sequence<DOMString> implies `toString()`
-            // See also https://heycam.github.io/webidl/#idl-DOMString
-            // and http://stackoverflow.com/questions/38164752/should-a-call-to-db-close-within-upgradeneeded-inevitably-prevent-onsuccess
-            kpPart = util.isObj(kpPart) ? kpPart.toString() : kpPart;
-            let key = extractKeyFromValueUsingKeyPath(value, kpPart, multiEntry);
-            try {
-                key = convertValueToKey(key);
-            } catch (err) {
-                return true;
-            }
-            arrayValue.push(key);
-        }, []) ? undefined : arrayValue;
+        var _ret = function () {
+            var arrayValue = [];
+            return {
+                v: keyPath.some(function (kpPart) {
+                    // If W3C tests are accurate, it appears sequence<DOMString> implies `toString()`
+                    // See also https://heycam.github.io/webidl/#idl-DOMString
+                    // and http://stackoverflow.com/questions/38164752/should-a-call-to-db-close-within-upgradeneeded-inevitably-prevent-onsuccess
+                    kpPart = util.isObj(kpPart) ? kpPart.toString() : kpPart;
+                    var key = extractKeyFromValueUsingKeyPath(value, kpPart, multiEntry);
+                    try {
+                        key = convertValueToKey(key);
+                    } catch (err) {
+                        return true;
+                    }
+                    arrayValue.push(key);
+                }, []) ? undefined : arrayValue
+            };
+        }();
+
+        if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
     }
     if (keyPath === '') {
         return value;
     }
-    const identifiers = keyPath.split('.');
-    identifiers.some((idntfr, i) => {
+    var identifiers = keyPath.split('.');
+    identifiers.some(function (idntfr, i) {
         if (idntfr === 'length' && typeof value === 'string' && i === identifiers.length - 1) {
             value = value.length;
             return true;
@@ -408,9 +404,9 @@ function evaluateKeyPathOnValue(value, keyPath, multiEntry) {
  * @param {*} value
  */
 function setValue(source, keyPath, value) {
-    const props = keyPath.split('.');
-    for (let i = 0; i < props.length - 1; i++) {
-        const prop = props[i];
+    var props = keyPath.split('.');
+    for (var i = 0; i < props.length - 1; i++) {
+        var prop = props[i];
         source = source[prop] = source[prop] || {};
     }
     source[props[props.length - 1]] = value;
@@ -423,7 +419,7 @@ function setValue(source, keyPath, value) {
  * @returns {boolean}
  */
 function isMultiEntryMatch(encodedEntry, encodedKey) {
-    const keyType = collations[encodedKey.substring(0, 1)];
+    var keyType = collations[encodedKey.substring(0, 1)];
 
     if (keyType === 'array') {
         return encodedKey.indexOf(encodedEntry) > 1;
@@ -433,11 +429,11 @@ function isMultiEntryMatch(encodedEntry, encodedKey) {
 }
 
 function isKeyInRange(key, range, checkCached) {
-    let lowerMatch = range.lower === undefined;
-    let upperMatch = range.upper === undefined;
-    const encodedKey = encode(key, true);
-    const lower = checkCached ? range.__lowerCached : encode(range.lower, true);
-    const upper = checkCached ? range.__upperCached : encode(range.upper, true);
+    var lowerMatch = range.lower === undefined;
+    var upperMatch = range.upper === undefined;
+    var encodedKey = _encode(key, true);
+    var lower = checkCached ? range.__lowerCached : _encode(range.lower, true);
+    var upper = checkCached ? range.__upperCached : _encode(range.upper, true);
 
     if (range.lower !== undefined) {
         if (range.lowerOpen && encodedKey > lower) {
@@ -460,11 +456,11 @@ function isKeyInRange(key, range, checkCached) {
 }
 
 function findMultiEntryMatches(keyEntry, range) {
-    const matches = [];
+    var matches = [];
 
     if (Array.isArray(keyEntry)) {
-        for (let i = 0; i < keyEntry.length; i++) {
-            let key = keyEntry[i];
+        for (var i = 0; i < keyEntry.length; i++) {
+            var key = keyEntry[i];
 
             if (Array.isArray(key)) {
                 if (range.lower === range.upper) {
@@ -473,7 +469,7 @@ function findMultiEntryMatches(keyEntry, range) {
                 if (key.length === 1) {
                     key = key[0];
                 } else {
-                    const nested = findMultiEntryMatches(key, range);
+                    var nested = findMultiEntryMatches(key, range);
                     if (nested.length > 0) {
                         matches.push(key);
                     }
@@ -493,7 +489,7 @@ function findMultiEntryMatches(keyEntry, range) {
     return matches;
 }
 
-function encode(key, inArray) {
+function _encode(key, inArray) {
     // Bad keys like `null`, `object`, `boolean`, 'function', 'symbol' should not be passed here due to prior validation
     if (key === undefined) {
         return null;
@@ -501,22 +497,12 @@ function encode(key, inArray) {
     // Currently has array, date, number, string
     return types[getType(key)].encode(key, inArray);
 }
-function decode(key, inArray) {
+function _decode(key, inArray) {
     if (typeof key !== 'string') {
         return undefined;
     }
     return types[collations[key.substring(0, 1)]].decode(key, inArray);
 }
 
-exports.default = Key = { encode, decode, convertValueToKey, convertValueToKeyMultiEntry, extractKeyFromValueUsingKeyPath, evaluateKeyPathOnValue, setValue, isMultiEntryMatch, isKeyInRange, findMultiEntryMatches };
-exports.encode = encode;
-exports.decode = decode;
-exports.convertValueToKey = convertValueToKey;
-exports.convertValueToKeyMultiEntry = convertValueToKeyMultiEntry;
-exports.extractKeyFromValueUsingKeyPath = extractKeyFromValueUsingKeyPath;
-exports.evaluateKeyPathOnValue = evaluateKeyPathOnValue;
-exports.setValue = setValue;
-exports.isMultiEntryMatch = isMultiEntryMatch;
-exports.isKeyInRange = isKeyInRange;
-exports.findMultiEntryMatches = findMultiEntryMatches;
-exports.default = Key;
+Key = { encode: _encode, decode: _decode, convertValueToKey: convertValueToKey, convertValueToKeyMultiEntry: convertValueToKeyMultiEntry, extractKeyFromValueUsingKeyPath: extractKeyFromValueUsingKeyPath, evaluateKeyPathOnValue: evaluateKeyPathOnValue, setValue: setValue, isMultiEntryMatch: isMultiEntryMatch, isKeyInRange: isKeyInRange, findMultiEntryMatches: findMultiEntryMatches };
+export { _encode as encode, _decode as decode, convertValueToKey, convertValueToKeyMultiEntry, extractKeyFromValueUsingKeyPath, evaluateKeyPathOnValue, setValue, isMultiEntryMatch, isKeyInRange, findMultiEntryMatches, Key as default };

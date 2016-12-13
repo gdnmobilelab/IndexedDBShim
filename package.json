@@ -28,7 +28,8 @@
     "w3c": "npm run w3c-build && node test-support/node-indexeddbshim-test",
     "w3c-good": "npm run w3c -- good",
     "w3c-bad": "npm run w3c -- bad",
-    "node6-build": "babel src --out-dir node6 --presets=node6 --plugins=add-module-exports"
+    "node6-build": "babel src --out-dir node6 --no-babelrc --presets=node6 --plugins=add-module-exports",
+    "rollup-ready-build": "babel src --out-dir rollup-ready"
   },
   "repository": {
     "type": "git",
@@ -46,6 +47,7 @@
     "websql"
   ],
   "dependencies": {
+    "babel-cli": "^6.18.0"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0",

@@ -1,23 +1,6 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = exports.IDBKeyRange = exports.setSQLForRange = undefined;
-
-var _DOMException = require('./DOMException.js');
-
-var _Key = require('./Key.js');
-
-var _Key2 = _interopRequireDefault(_Key);
-
-var _util = require('./util.js');
-
-var util = _interopRequireWildcard(_util);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+import { createDOMException } from './DOMException.js';
+import Key from './Key.js';
+import * as util from './util.js';
 
 /**
  * The IndexedDB KeyRange object
@@ -32,14 +15,14 @@ function IDBKeyRange(lower, upper, lowerOpen, upperOpen) {
         throw new TypeError('Both arguments to the key range method cannot be undefined');
     }
     if (lower !== undefined) {
-        _Key2.default.convertValueToKey(lower);
+        Key.convertValueToKey(lower);
     }
     if (upper !== undefined) {
-        _Key2.default.convertValueToKey(upper);
+        Key.convertValueToKey(upper);
     }
     if (lower !== undefined && upper !== undefined && lower !== upper) {
-        if (_Key2.default.encode(lower) > _Key2.default.encode(upper)) {
-            throw (0, _DOMException.createDOMException)('DataError', '`lower` must not be greater than `upper` argument in `bound()` call.');
+        if (Key.encode(lower) > Key.encode(upper)) {
+            throw createDOMException('DataError', '`lower` must not be greater than `upper` argument in `bound()` call.');
         }
     }
 
@@ -49,8 +32,8 @@ function IDBKeyRange(lower, upper, lowerOpen, upperOpen) {
     this.__upperOpen = !!upperOpen;
 }
 IDBKeyRange.prototype.includes = function (key) {
-    _Key2.default.convertValueToKey(key);
-    return _Key2.default.isKeyInRange(key, this);
+    Key.convertValueToKey(key);
+    return Key.isKeyInRange(key, this);
 };
 
 IDBKeyRange.only = function (value) {
@@ -73,7 +56,9 @@ IDBKeyRange.prototype.toString = function () {
 util.defineReadonlyProperties(IDBKeyRange.prototype, ['lower', 'upper', 'lowerOpen', 'upperOpen']);
 
 Object.defineProperty(IDBKeyRange, Symbol.hasInstance, {
-    value: obj => util.isObj(obj) && 'upper' in obj && typeof obj.lowerOpen === 'boolean'
+    value: function value(obj) {
+        return util.isObj(obj) && 'upper' in obj && typeof obj.lowerOpen === 'boolean';
+    }
 });
 
 function setSQLForRange(range, quotedKeyColumnName, sql, sqlValues, addAnd, checkCached) {
@@ -81,16 +66,14 @@ function setSQLForRange(range, quotedKeyColumnName, sql, sqlValues, addAnd, chec
         if (addAnd) sql.push('AND');
         if (range.lower !== undefined) {
             sql.push(quotedKeyColumnName, range.lowerOpen ? '>' : '>=', '?');
-            sqlValues.push(checkCached ? range.__lowerCached : _Key2.default.encode(range.lower));
+            sqlValues.push(checkCached ? range.__lowerCached : Key.encode(range.lower));
         }
         range.lower !== undefined && range.upper !== undefined && sql.push('AND');
         if (range.upper !== undefined) {
             sql.push(quotedKeyColumnName, range.upperOpen ? '<' : '<=', '?');
-            sqlValues.push(checkCached ? range.__upperCached : _Key2.default.encode(range.upper));
+            sqlValues.push(checkCached ? range.__upperCached : Key.encode(range.upper));
         }
     }
 }
 
-exports.setSQLForRange = setSQLForRange;
-exports.IDBKeyRange = IDBKeyRange;
-exports.default = IDBKeyRange;
+export { setSQLForRange, IDBKeyRange, IDBKeyRange as default };

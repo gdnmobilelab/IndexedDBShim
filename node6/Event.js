@@ -17,10 +17,10 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var ShimEvent = _eventtarget2.default.EventPolyfill;
+const ShimEvent = _eventtarget2.default.EventPolyfill;
 
 function createEvent(type, debug, evInit) {
-    var ev = new ShimEvent(type, evInit);
+    const ev = new ShimEvent(type, evInit);
     ev.debug = debug;
     return ev;
 }
@@ -32,14 +32,14 @@ function IDBVersionChangeEvent(type, eventInitDict) {
     Object.defineProperty(this, 'oldVersion', {
         enumerable: true,
         configurable: true,
-        get: function get() {
+        get: function () {
             return eventInitDict.oldVersion;
         }
     });
     Object.defineProperty(this, 'newVersion', {
         enumerable: true,
         configurable: true,
-        get: function get() {
+        get: function () {
             return eventInitDict.newVersion;
         }
     });
@@ -51,16 +51,12 @@ IDBVersionChangeEvent.prototype.toString = function () {
 };
 
 Object.defineProperty(IDBVersionChangeEvent, Symbol.hasInstance, {
-    value: function value(obj) {
-        return util.isObj(obj) && 'oldVersion' in obj && typeof obj.defaultPrevented === 'boolean';
-    }
+    value: obj => util.isObj(obj) && 'oldVersion' in obj && typeof obj.defaultPrevented === 'boolean'
 });
 
 // We don't add to polyfill as this might not be the desired implementation
 Object.defineProperty(ShimEvent, Symbol.hasInstance, {
-    value: function value(obj) {
-        return util.isObj(obj) && 'target' in obj && typeof obj.bubbles === 'boolean';
-    }
+    value: obj => util.isObj(obj) && 'target' in obj && typeof obj.bubbles === 'boolean'
 });
 
 exports.IDBVersionChangeEvent = IDBVersionChangeEvent;

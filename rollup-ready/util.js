@@ -1,21 +1,11 @@
-'use strict';
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.isValidKeyPath = exports.defineReadonlyProperties = exports.throwIfNotClonable = exports.isFile = exports.isRegExp = exports.isBlob = exports.isDate = exports.isObj = exports.instanceOf = exports.sqlLIKEEscape = exports.escapeIndexName = exports.escapeIndex = exports.escapeStore = exports.escapeDatabaseName = exports.quote = exports.StringList = undefined;
+import { createDOMException } from './DOMException.js';
+import CFG from './CFG.js';
 
-var _DOMException = require('./DOMException.js');
+var cleanInterface = false;
 
-var _CFG = require('./CFG.js');
-
-var _CFG2 = _interopRequireDefault(_CFG);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-let cleanInterface = false;
-
-const testObject = { test: true };
+var testObject = { test: true };
 // Test whether Object.defineProperty really works.
 if (Object.defineProperty) {
     try {
@@ -32,7 +22,7 @@ if (Object.defineProperty) {
  * Shim the DOMStringList object.
  *
  */
-const StringList = function () {
+var StringList = function StringList() {
     this.length = 0;
     this._items = [];
     // Internal functions on the prototype have been made non-enumerable below.
@@ -49,44 +39,46 @@ const StringList = function () {
 };
 StringList.prototype = {
     // Interface.
-    contains: function (str) {
+    contains: function contains(str) {
         return this._items.includes(str);
     },
-    item: function (key) {
+    item: function item(key) {
         return this._items[key];
     },
 
     // Helpers. Should only be used internally.
-    addIndexes: function () {
-        for (let i = 0; i < this._items.length; i++) {
+    addIndexes: function addIndexes() {
+        for (var i = 0; i < this._items.length; i++) {
             this[i] = this._items[i];
         }
     },
-    sortList: function () {
+    sortList: function sortList() {
         // http://w3c.github.io/IndexedDB/#sorted-list
         // https://tc39.github.io/ecma262/#sec-abstract-relational-comparison
         this._items.sort();
         this.addIndexes();
         return this._items;
     },
-    forEach: function (cb, thisArg) {
+    forEach: function forEach(cb, thisArg) {
         this._items.forEach(cb, thisArg);
     },
-    map: function (cb, thisArg) {
+    map: function map(cb, thisArg) {
         return this._items.map(cb, thisArg);
     },
-    indexOf: function (str) {
+    indexOf: function indexOf(str) {
         return this._items.indexOf(str);
     },
-    push: function (item) {
+    push: function push(item) {
         this._items.push(item);
         this.length++;
         this.sortList();
     },
-    splice: function (...args /* index, howmany, item1, ..., itemX */) {
-        this._items.splice(...args);
+    splice: function splice() /* index, howmany, item1, ..., itemX */{
+        var _items;
+
+        (_items = this._items).splice.apply(_items, arguments);
         this.length = this._items.length;
-        for (const i in this) {
+        for (var i in this) {
             if (i === String(parseInt(i, 10))) {
                 delete this[i];
             }
@@ -95,7 +87,7 @@ StringList.prototype = {
     }
 };
 if (cleanInterface) {
-    for (const i in {
+    for (var i in {
         'addIndexes': false,
         'sortList': false,
         'forEach': false,
@@ -159,7 +151,7 @@ function instanceOf(obj, Clss) {
 }
 
 function isObj(obj) {
-    return obj && typeof obj === 'object';
+    return obj && (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object';
 }
 
 function isDate(obj) {
@@ -189,7 +181,7 @@ function isArrayBufferOrView (obj) {
 */
 
 function isNotClonable(value) {
-    return ['function', 'symbol'].includes(typeof value) || isObj(value) && (value instanceof Error || // Duck-typing with some util.isError would be better, but too easy to get a false match
+    return ['function', 'symbol'].includes(typeof value === 'undefined' ? 'undefined' : _typeof(value)) || isObj(value) && (value instanceof Error || // Duck-typing with some util.isError would be better, but too easy to get a false match
     value.nodeType > 0 && typeof value.nodeName === 'string' // DOM nodes
     );
 }
@@ -197,7 +189,7 @@ function isNotClonable(value) {
 function throwIfNotClonable(value, errMsg) {
     JSON.stringify(value, function (key, val) {
         if (isNotClonable(val)) {
-            throw (0, _DOMException.createDOMException)('DataCloneError', errMsg);
+            throw createDOMException('DataCloneError', errMsg);
         }
         return val;
     });
@@ -214,31 +206,31 @@ function defineReadonlyProperties(obj, props) {
         Object.defineProperty(obj, prop, {
             enumerable: true,
             configurable: true,
-            get: function () {
+            get: function get() {
                 return this['__' + prop];
             }
         });
     });
 }
 
-const HexDigit = '[0-9a-fA-F]';
+var HexDigit = '[0-9a-fA-F]';
 // The commented out line below is technically the grammar, with a SyntaxError
 //   to occur if larger than U+10FFFF, but we will prevent the error by
 //   establishing the limit in regular expressions
 // const HexDigits = HexDigit + HexDigit + '*';
-const HexDigits = '0*(?:' + HexDigit + '{1,5}|10' + HexDigit + '{4})*';
-const UnicodeEscapeSequence = '(?:u' + HexDigit + '{4}|u{' + HexDigits + '})';
+var HexDigits = '0*(?:' + HexDigit + '{1,5}|10' + HexDigit + '{4})*';
+var UnicodeEscapeSequence = '(?:u' + HexDigit + '{4}|u{' + HexDigits + '})';
 
 function isIdentifier(item) {
     // For load-time and run-time performance, we don't provide the complete regular
     //   expression for identifiers, but these can be passed in, using the expressions
     //   found at https://gist.github.com/brettz9/b4cd6821d990daa023b2e604de371407
     // ID_Start (includes Other_ID_Start)
-    const UnicodeIDStart = _CFG2.default.UnicodeIDStart || '[$A-Z_a-z]';
+    var UnicodeIDStart = CFG.UnicodeIDStart || '[$A-Z_a-z]';
     // ID_Continue (includes Other_ID_Continue)
-    const UnicodeIDContinue = _CFG2.default.UnicodeIDContinue || '[$0-9A-Z_a-z]';
-    const IdentifierStart = '(?:' + UnicodeIDStart + '|[$_]|\\\\' + UnicodeEscapeSequence + ')';
-    const IdentifierPart = '(?:' + UnicodeIDContinue + '|[$_]|\\\\' + UnicodeEscapeSequence + '|\\u200C|\\u200D)';
+    var UnicodeIDContinue = CFG.UnicodeIDContinue || '[$0-9A-Z_a-z]';
+    var IdentifierStart = '(?:' + UnicodeIDStart + '|[$_]|\\\\' + UnicodeEscapeSequence + ')';
+    var IdentifierPart = '(?:' + UnicodeIDContinue + '|[$_]|\\\\' + UnicodeEscapeSequence + '|\\u200C|\\u200D)';
     return new RegExp('^' + IdentifierStart + IdentifierPart + '*$').test(item);
 }
 
@@ -256,19 +248,4 @@ function isValidKeyPath(keyPath) {
     });
 }
 
-exports.StringList = StringList;
-exports.quote = quote;
-exports.escapeDatabaseName = escapeDatabaseName;
-exports.escapeStore = escapeStore;
-exports.escapeIndex = escapeIndex;
-exports.escapeIndexName = escapeIndexName;
-exports.sqlLIKEEscape = sqlLIKEEscape;
-exports.instanceOf = instanceOf;
-exports.isObj = isObj;
-exports.isDate = isDate;
-exports.isBlob = isBlob;
-exports.isRegExp = isRegExp;
-exports.isFile = isFile;
-exports.throwIfNotClonable = throwIfNotClonable;
-exports.defineReadonlyProperties = defineReadonlyProperties;
-exports.isValidKeyPath = isValidKeyPath;
+export { StringList, quote, escapeDatabaseName, escapeStore, escapeIndex, escapeIndexName, sqlLIKEEscape, instanceOf, isObj, isDate, isBlob, isRegExp, isFile, throwIfNotClonable, defineReadonlyProperties, isValidKeyPath };

@@ -36,8 +36,6 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
  * @constructor
  */
 function IDBDatabase(db, name, version, storeProperties) {
-    var _this = this;
-
     this.__db = db;
     this.__closed = false;
     this.__version = version;
@@ -46,10 +44,9 @@ function IDBDatabase(db, name, version, storeProperties) {
 
     this.__objectStores = {};
     this.__objectStoreNames = new util.StringList();
-    var itemCopy = {};
-
-    var _loop = function _loop(i) {
-        var item = storeProperties.rows.item(i);
+    const itemCopy = {};
+    for (let i = 0; i < storeProperties.rows.length; i++) {
+        const item = storeProperties.rows.item(i);
         // Safari implements `item` getter return object's properties
         //  as readonly, so we copy all its properties (except our
         //  custom `currNum` which we don't need) onto a new object
@@ -57,14 +54,10 @@ function IDBDatabase(db, name, version, storeProperties) {
         ['keyPath', 'autoInc', 'indexList'].forEach(function (prop) {
             itemCopy[prop] = JSON.parse(item[prop]);
         });
-        itemCopy.idbdb = _this;
-        var store = new _IDBObjectStore2.default(itemCopy);
-        _this.__objectStores[store.name] = store;
-        _this.objectStoreNames.push(store.name);
-    };
-
-    for (var i = 0; i < storeProperties.rows.length; i++) {
-        _loop(i);
+        itemCopy.idbdb = this;
+        const store = new _IDBObjectStore2.default(itemCopy);
+        this.__objectStores[store.name] = store;
+        this.objectStoreNames.push(store.name);
     }
 }
 
@@ -89,8 +82,8 @@ IDBDatabase.prototype.createObjectStore = function (storeName, createOptions) {
         createOptions.keyPath = null;
     }
 
-    var keyPath = createOptions.keyPath;
-    var autoIncrement = createOptions.autoIncrement;
+    const keyPath = createOptions.keyPath;
+    const autoIncrement = createOptions.autoIncrement;
 
     if (keyPath !== null && !util.isValidKeyPath(keyPath)) {
         throw (0, _DOMException.createDOMException)('SyntaxError', 'The keyPath argument contains an invalid key path.');
@@ -100,14 +93,14 @@ IDBDatabase.prototype.createObjectStore = function (storeName, createOptions) {
     }
 
     /** @name IDBObjectStoreProperties **/
-    var storeProperties = {
+    const storeProperties = {
         name: storeName,
         keyPath: keyPath,
         autoInc: autoIncrement,
         indexList: {},
         idbdb: this
     };
-    var store = new _IDBObjectStore2.default(storeProperties, this.__versionTransaction);
+    const store = new _IDBObjectStore2.default(storeProperties, this.__versionTransaction);
     _IDBObjectStore2.default.__createObjectStore(this, store);
     return store;
 };
@@ -124,7 +117,7 @@ IDBDatabase.prototype.deleteObjectStore = function (storeName) {
     _IDBTransaction2.default.__assertActive(this.__versionTransaction);
     delete this.__versionTransaction.__storeClones[storeName];
 
-    var store = this.__objectStores[storeName];
+    const store = this.__objectStores[storeName];
     if (!store) {
         throw (0, _DOMException.createDOMException)('NotFoundError', 'Object store "' + storeName + '" does not exist in ' + this.name);
     }
@@ -143,8 +136,6 @@ IDBDatabase.prototype.close = function () {
  * @returns {IDBTransaction}
  */
 IDBDatabase.prototype.transaction = function (storeNames, mode) {
-    var _this2 = this;
-
     if (typeof mode === 'number') {
         mode = mode === 1 ? 'readwrite' : 'readonly';
         _CFG2.default.DEBUG && console.log('Mode should be a string, but was specified as ', mode); // Todo: Remove this option as no longer in spec
@@ -162,8 +153,8 @@ IDBDatabase.prototype.transaction = function (storeNames, mode) {
     }
 
     storeNames = typeof storeNames === 'string' ? [storeNames] : storeNames;
-    storeNames.forEach(function (storeName) {
-        if (!_this2.objectStoreNames.contains(storeName)) {
+    storeNames.forEach(storeName => {
+        if (!this.objectStoreNames.contains(storeName)) {
             throw (0, _DOMException.createDOMException)('NotFoundError', 'The "' + storeName + '" object store does not exist');
         }
     });

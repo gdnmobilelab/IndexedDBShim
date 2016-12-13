@@ -1,51 +1,21 @@
-'use strict';
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+import { IDBVersionChangeEvent as shimIDBVersionChangeEvent } from './Event.js';
+import { IDBCursor as shimIDBCursor, IDBCursorWithValue as shimIDBCursorWithValue } from './IDBCursor.js';
+import { IDBRequest as shimIDBRequest, IDBOpenDBRequest as shimIDBOpenDBRequest } from './IDBRequest.js';
+import { IDBFactory as shimIDBFactory, shimIndexedDB } from './IDBFactory.js';
+import shimIDBKeyRange from './IDBKeyRange.js';
+import shimIDBObjectStore from './IDBObjectStore.js';
+import shimIDBIndex from './IDBIndex.js';
+import shimIDBTransaction from './IDBTransaction.js';
+import shimIDBDatabase from './IDBDatabase.js';
+import polyfill from './polyfill.js';
+import CFG from './CFG.js';
 
-var _Event = require('./Event.js');
-
-var _IDBCursor = require('./IDBCursor.js');
-
-var _IDBRequest = require('./IDBRequest.js');
-
-var _IDBFactory = require('./IDBFactory.js');
-
-var _IDBKeyRange = require('./IDBKeyRange.js');
-
-var _IDBKeyRange2 = _interopRequireDefault(_IDBKeyRange);
-
-var _IDBObjectStore = require('./IDBObjectStore.js');
-
-var _IDBObjectStore2 = _interopRequireDefault(_IDBObjectStore);
-
-var _IDBIndex = require('./IDBIndex.js');
-
-var _IDBIndex2 = _interopRequireDefault(_IDBIndex);
-
-var _IDBTransaction = require('./IDBTransaction.js');
-
-var _IDBTransaction2 = _interopRequireDefault(_IDBTransaction);
-
-var _IDBDatabase = require('./IDBDatabase.js');
-
-var _IDBDatabase2 = _interopRequireDefault(_IDBDatabase);
-
-var _polyfill = require('./polyfill.js');
-
-var _polyfill2 = _interopRequireDefault(_polyfill);
-
-var _CFG = require('./CFG.js');
-
-var _CFG2 = _interopRequireDefault(_CFG);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-const glob = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
+var glob = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 glob._babelPolyfill = false; // http://stackoverflow.com/questions/31282702/conflicting-use-of-babel-register
 
-let IDB;
+var IDB = void 0;
 
 function shim(name, value) {
     try {
@@ -57,7 +27,7 @@ function shim(name, value) {
     if (IDB[name] !== value && Object.defineProperty) {
         // Setting a read-only property failed, so try re-defining the property
         try {
-            const desc = { value };
+            var desc = { value: value };
             if (name === 'indexedDB') {
                 desc.writable = false; // Make explicit for Babel
             }
@@ -76,37 +46,37 @@ function shim(name, value) {
 
 function setGlobalVars(idb) {
     IDB = idb || (typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {});
-    shim('shimIndexedDB', _IDBFactory.shimIndexedDB);
+    shim('shimIndexedDB', shimIndexedDB);
     if (IDB.shimIndexedDB) {
         IDB.shimIndexedDB.__useShim = function () {
-            if (_CFG2.default.win.openDatabase !== undefined) {
+            if (CFG.win.openDatabase !== undefined) {
                 // Polyfill ALL of IndexedDB, using WebSQL
-                shim('indexedDB', _IDBFactory.shimIndexedDB);
-                shim('IDBFactory', _IDBFactory.IDBFactory);
-                shim('IDBDatabase', _IDBDatabase2.default);
-                shim('IDBObjectStore', _IDBObjectStore2.default);
-                shim('IDBIndex', _IDBIndex2.default);
-                shim('IDBTransaction', _IDBTransaction2.default);
-                shim('IDBCursor', _IDBCursor.IDBCursor);
-                shim('IDBCursorWithValue', _IDBCursor.IDBCursorWithValue);
-                shim('IDBKeyRange', _IDBKeyRange2.default);
-                shim('IDBRequest', _IDBRequest.IDBRequest);
-                shim('IDBOpenDBRequest', _IDBRequest.IDBOpenDBRequest);
-                shim('IDBVersionChangeEvent', _Event.IDBVersionChangeEvent);
-            } else if (typeof IDB.indexedDB === 'object') {
+                shim('indexedDB', shimIndexedDB);
+                shim('IDBFactory', shimIDBFactory);
+                shim('IDBDatabase', shimIDBDatabase);
+                shim('IDBObjectStore', shimIDBObjectStore);
+                shim('IDBIndex', shimIDBIndex);
+                shim('IDBTransaction', shimIDBTransaction);
+                shim('IDBCursor', shimIDBCursor);
+                shim('IDBCursorWithValue', shimIDBCursorWithValue);
+                shim('IDBKeyRange', shimIDBKeyRange);
+                shim('IDBRequest', shimIDBRequest);
+                shim('IDBOpenDBRequest', shimIDBOpenDBRequest);
+                shim('IDBVersionChangeEvent', shimIDBVersionChangeEvent);
+            } else if (_typeof(IDB.indexedDB) === 'object') {
                 // Polyfill the missing IndexedDB features (no need for IDBEnvironment, the window containing indexedDB itself))
-                (0, _polyfill2.default)(_IDBCursor.IDBCursor, _IDBCursor.IDBCursorWithValue, _IDBDatabase2.default, _IDBFactory.IDBFactory, _IDBIndex2.default, _IDBKeyRange2.default, _IDBObjectStore2.default, _IDBRequest.IDBRequest, _IDBTransaction2.default);
+                polyfill(shimIDBCursor, shimIDBCursorWithValue, shimIDBDatabase, shimIDBFactory, shimIDBIndex, shimIDBKeyRange, shimIDBObjectStore, shimIDBRequest, shimIDBTransaction);
             }
         };
 
         IDB.shimIndexedDB.__debug = function (val) {
-            _CFG2.default.DEBUG = val;
+            CFG.DEBUG = val;
         };
         IDB.shimIndexedDB.__setConfig = function (prop, val) {
-            _CFG2.default[prop] = val;
+            CFG[prop] = val;
         };
         IDB.shimIndexedDB.__getConfig = function (prop) {
-            return _CFG2.default[prop];
+            return CFG[prop];
         };
         IDB.shimIndexedDB.__setUnicodeIdentifiers = function (ui) {
             this.__setConfig('UnicodeIDStart', ui.UnicodeIDStart);
@@ -120,7 +90,7 @@ function setGlobalVars(idb) {
     }
 
     // Detect browsers with known IndexedDb issues (e.g. Android pre-4.4)
-    let poorIndexedDbSupport = false;
+    var poorIndexedDbSupport = false;
     if (typeof navigator !== 'undefined' && ( // Ignore Node or other environments
 
     // Bad non-Chrome Android support
@@ -133,12 +103,12 @@ function setGlobalVars(idb) {
     )) {
         poorIndexedDbSupport = true;
     }
-    _CFG2.default.DEFAULT_DB_SIZE = ( // Safari currently requires larger size: (We don't need a larger size for Node as node-websql doesn't use this info)
+    CFG.DEFAULT_DB_SIZE = ( // Safari currently requires larger size: (We don't need a larger size for Node as node-websql doesn't use this info)
     // https://github.com/axemclion/IndexedDBShim/issues/41
     // https://github.com/axemclion/IndexedDBShim/issues/115
     typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') > -1 && navigator.userAgent.indexOf('Chrome') === -1 ? 25 : 4) * 1024 * 1024;
 
-    if ((IDB.indexedDB === undefined || !IDB.indexedDB || poorIndexedDbSupport) && _CFG2.default.win.openDatabase !== undefined) {
+    if ((IDB.indexedDB === undefined || !IDB.indexedDB || poorIndexedDbSupport) && CFG.win.openDatabase !== undefined) {
         IDB.shimIndexedDB.__useShim();
     } else {
         IDB.IDBDatabase = IDB.IDBDatabase || IDB.webkitIDBDatabase;
@@ -149,5 +119,4 @@ function setGlobalVars(idb) {
     return IDB;
 }
 
-exports.default = setGlobalVars;
-module.exports = exports['default'];
+export default setGlobalVars;

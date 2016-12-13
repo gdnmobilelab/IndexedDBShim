@@ -16,7 +16,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 /* globals GLOBAL */
 
-exports.default = function (openDatabase) {
+exports.default = openDatabase => {
     _CFG2.default.win = { openDatabase: openDatabase };
     return _setGlobalVars2.default;
 };

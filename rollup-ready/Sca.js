@@ -1,25 +1,9 @@
-'use strict';
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.default = exports.decode = exports.encode = exports.retrocycle = exports.decycle = undefined;
-
-var _atob = require('atob');
-
-var _atob2 = _interopRequireDefault(_atob);
-
-var _w3cBlob = require('w3c-blob');
-
-var _w3cBlob2 = _interopRequireDefault(_w3cBlob);
-
-var _util = require('./util.js');
-
-var util = _interopRequireWildcard(_util);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+/* eslint-disable no-eval */
+import atob from 'atob';
+import Blob from 'w3c-blob'; // Needed by Node; uses native if available (browser)
+import * as util from './util.js';
 
 /**
  * Implementation of the Structured Cloning Algorithm.  Supports the
@@ -65,11 +49,11 @@ function decycle(object, callback) {
     // the object or array. [NUMBER] or [STRING] indicates a child member or
     // property.
 
-    const objects = []; // Keep a reference to each unique object or array
-    const paths = []; // Keep the path to each unique object or array
-    const queuedObjects = [];
-    const returnCallback = callback;
-    let derezObj; // eslint-disable-line prefer-const
+    var objects = []; // Keep a reference to each unique object or array
+    var paths = []; // Keep the path to each unique object or array
+    var queuedObjects = [];
+    var returnCallback = callback;
+    var derezObj = void 0; // eslint-disable-line prefer-const
 
     /**
      * Check the queue to see if all objects have been processed.
@@ -87,10 +71,10 @@ function decycle(object, callback) {
      * @param {String} path of blob in object being encoded.
      */
     function readBlobAsDataURL(blob, path) {
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onloadend = function (loadedEvent) {
-            const dataURL = loadedEvent.target.result;
-            const blobtype = 'Blob';
+            var dataURL = loadedEvent.target.result;
+            var blobtype = 'Blob';
             if (util.isFile(blob)) {
                 // blobtype = 'File';
             }
@@ -106,7 +90,7 @@ function decycle(object, callback) {
      * @param {String} blobtype - file if the blob is a file; blob otherwise
      */
     function updateEncodedBlob(dataURL, path, blobtype) {
-        const encoded = queuedObjects.indexOf(path);
+        var encoded = queuedObjects.indexOf(path);
         path = path.replace('$', 'derezObj');
         eval(path + '.$enc="' + dataURL + '"');
         eval(path + '.$type="' + blobtype + '"');
@@ -117,16 +101,18 @@ function decycle(object, callback) {
     function derez(value, path) {
         // The derez recurses through the object, producing the deep copy.
 
-        let i, // The loop counter
-        name, // Property name
-        nu; // The new object or array
+        var i = void 0,
+            // The loop counter
+        name = void 0,
+            // Property name
+        nu = void 0; // The new object or array
 
         // typeof null === 'object', so go on if this value is really an object but not
         // one of the weird builtin objects.
 
-        const isObj = util.isObj(value);
-        const valOfType = isObj && typeof value.valueOf();
-        if (isObj && !['boolean', 'number', 'string'].includes(valOfType) && !util.isDate(value) && !util.isRegExp(value) && !util.isBlob(_w3cBlob2.default)) {
+        var isObj = util.isObj(value);
+        var valOfType = isObj && _typeof(value.valueOf());
+        if (isObj && !['boolean', 'number', 'string'].includes(valOfType) && !util.isDate(value) && !util.isRegExp(value) && !util.isBlob(Blob)) {
             // If the value is an object or array, look to see if we have already
             // encountered it. If so, return a $ref/path object. This is a hard way,
             // linear search that will get slower as the number of unique objects grows.
@@ -198,9 +184,7 @@ function decycle(object, callback) {
     }
     derezObj = derez(object, '$');
     checkForCompletion();
-} // Needed by Node; uses native if available (browser)
-/* eslint-disable no-eval */
-
+}
 
 function retrocycle($) {
     // From: https://github.com/douglascrockford/JSON-js/blob/master/cycle.js
@@ -231,7 +215,7 @@ function retrocycle($) {
     //      return JSON.retrocycle(JSON.parse(s));
     // produces an array containing a single element which is the array itself.
 
-    const px = /^\$(?:\[(?:\d+|"(?:[^\\"\u0000-\u001f]|\\([\\"/bfnrt]|u[0-9a-zA-Z]{4}))*")])*$/;
+    var px = /^\$(?:\[(?:\d+|"(?:[^\\"\u0000-\u001f]|\\([\\"/bfnrt]|u[0-9a-zA-Z]{4}))*")])*$/;
 
     /**
      * Converts the specified data URL to a Blob object
@@ -239,26 +223,28 @@ function retrocycle($) {
      * @returns {Blob} the converted Blob object
      */
     function dataURLToBlob(dataURL) {
-        const BASE64_MARKER = ';base64,';
-        let contentType, parts, raw;
+        var BASE64_MARKER = ';base64,';
+        var contentType = void 0,
+            parts = void 0,
+            raw = void 0;
         if (!dataURL.includes(BASE64_MARKER)) {
             parts = dataURL.split(',');
             contentType = parts[0].split(':')[1];
             raw = parts[1];
 
-            return new _w3cBlob2.default([raw], { type: contentType });
+            return new Blob([raw], { type: contentType });
         }
 
         parts = dataURL.split(BASE64_MARKER);
         contentType = parts[0].split(':')[1];
-        raw = (0, _atob2.default)(parts[1]);
-        const rawLength = raw.length;
-        const uInt8Array = new Uint8Array(rawLength);
+        raw = atob(parts[1]);
+        var rawLength = raw.length;
+        var uInt8Array = new Uint8Array(rawLength);
 
-        for (let i = 0; i < rawLength; ++i) {
+        for (var i = 0; i < rawLength; ++i) {
             uInt8Array[i] = raw.charCodeAt(i);
         }
-        return new _w3cBlob2.default([uInt8Array.buffer], { type: contentType });
+        return new Blob([uInt8Array.buffer], { type: contentType });
     }
 
     function rez(value) {
@@ -267,7 +253,10 @@ function retrocycle($) {
         // replaces the $ref object with a reference to the value that is found by
         // the path.
 
-        let i, item, name, path;
+        var i = void 0,
+            item = void 0,
+            name = void 0,
+            path = void 0;
 
         if (util.isObj(value)) {
             if (Array.isArray(value)) {
@@ -310,7 +299,7 @@ function retrocycle($) {
                     }
                 } else {
                     for (name in value) {
-                        if (typeof value[name] === 'object') {
+                        if (_typeof(value[name]) === 'object') {
                             item = value[name];
                             if (item) {
                                 path = item.$ref;
@@ -354,9 +343,5 @@ function decode(val) {
     return retrocycle(JSON.parse(val));
 }
 
-const Sca = { decycle, retrocycle, encode, decode };
-exports.decycle = decycle;
-exports.retrocycle = retrocycle;
-exports.encode = encode;
-exports.decode = decode;
-exports.default = Sca;
+var Sca = { decycle: decycle, retrocycle: retrocycle, encode: encode, decode: decode };
+export { decycle, retrocycle, encode, decode, Sca as default };
